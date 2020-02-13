@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 #コミットしてみた
+#コンフリクトおきないかな？？？
 
 class Kernel:
     def __init__(self,param,bound=None):
