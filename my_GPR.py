@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 #コミットしてみた
 #PIYO
 #コンフリクトおきないかな？？？
+#F
 
 class Kernel:
     def __init__(self,param,bound=None):
