@@ -1,6 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
+#コミットしてみた
+
 class Kernel:
     def __init__(self,param,bound=None):
         self.param = np.array(param)
