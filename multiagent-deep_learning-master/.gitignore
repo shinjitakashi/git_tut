@@ -1,0 +1,12 @@
+.DS_Store
+*~
+*.gz
+*.pyc
+__pycache__/
+mnist.pkl
+
+*.dat
+*.png
+*.pdf
+
+.vscode
