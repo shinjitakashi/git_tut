@@ -124,7 +124,7 @@ if __name__ == '__main__':
         plt.plot(x1,y(x1),'--r')
         plt.plot(x1,mu,'g')
         plt.fill_between(x1,mu-std,mu+std,alpha=0.2,color='g')
-        plt.title('a=%.3f, s=%.3f, w=%.3f'%tuple(multi_gp.kernel.param))
+        plt.title('a=%.3f, s=%.3f, w=%.3f'%tuple(multi_gp[0].kernel.param))
     plt.tight_layout()
     plt.show()
 
