@@ -62,30 +62,30 @@ if __name__ == '__main__':
     def y(x): # 実際の関数
         return 5*np.sin(np.pi/15*x)*np.exp(-x/50)
 
-    n = 100 # 既知の点の数
-    x0 = np.random.uniform(0,100,n) # 既知の点
-    y0 = y(x0) + np.random.normal(0,1,n)
+    find_n = 100 # 既知の点の数
+    x0 = np.random.uniform(0,100,find_n) # 既知の点
+    y0 = y(x0) + np.random.normal(0,1,find_n)
     param0 = [2,0.4,1.5] # パラメータの初期値
     bound = [[1e-2,1e2],[1e-2,1e2],[1e-2,1e2]] # 下限上限
     kernel = Kernel(param0,bound)
     
     x1 = np.linspace(0,100,200) #予測用のデータ
     
-    alone_gp = Gausskatei(kernel) 
-    alone_gp.gakushuu(x0,y0)
+    # alone_gp = Gausskatei(kernel) 
+    # alone_gp.gakushuu(x0,y0)
     
-    for i in [0,1]:
-        if(i):
-            alone_gp.saitekika(x0,y0,1000) # パラメータを調整する
-        plt.subplot(211+i)
-        plt.plot(x0,y0,'. ')
-        mu,std = alone_gp.yosoku(x1)
-        plt.plot(x1,y(x1),'--r')
-        plt.plot(x1,mu,'g')
-        plt.fill_between(x1,mu-std,mu+std,alpha=0.2,color='g')
-        plt.title('a=%.3f, s=%.3f, w=%.3f'%tuple(alone_gp.kernel.param))
-    plt.tight_layout()
-    plt.show()
+    # for i in [0,1]:
+    #     if(i):
+    #         alone_gp.saitekika(xgit p0,y0,1000) # パラメータを調整する
+    #     plt.subplot(211+i)
+    #     plt.plot(x0,y0,'. ')
+    #     mu,std = alone_gp.yosoku(x1)
+    #     plt.plot(x1,y(x1),'--r')
+    #     plt.plot(x1,mu,'g')
+    #     plt.fill_between(x1,mu-std,mu+std,alpha=0.2,color='g')
+    #     plt.title('a=%.3f, s=%.3f, w=%.3f'%tuple(alone_gp.kernel.param))
+    # plt.tight_layout()
+    # plt.show()
 
     xd = []
     yd = []
@@ -102,9 +102,8 @@ if __name__ == '__main__':
         gp[i].gakushuu(x0, y0)
     plt.figure(figsize=[5,8])
     for i in [0,1]:
+        multi_gp = copy.deepcopy(gp)
         if (i):
-            multi_gp = copy.deepcopy(gp)
-
             for i in range(N):
                 for j in range(N):
                     if i!=j and A[i][j]==1:
@@ -125,7 +124,7 @@ if __name__ == '__main__':
         plt.plot(x1,y(x1),'--r')
         plt.plot(x1,mu,'g')
         plt.fill_between(x1,mu-std,mu+std,alpha=0.2,color='g')
-        plt.title('a=%.3f, s=%.3f, w=%.3f'%tuple(alone_gp.kernel.param))
+        plt.title('a=%.3f, s=%.3f, w=%.3f'%tuple(multi_gp.kernel.param))
     plt.tight_layout()
     plt.show()
 
