@@ -73,12 +73,6 @@ if __name__ == '__main__':
     
     alone_gp = Gausskatei(kernel) 
     alone_gp.gakushuu(x0,y0)
-
-    gp = []
-    for i in range(N):
-        gp.append(GausskateiWithMyTheory(kernel, N, i, P))
-        gp[i].gakushuu(x0, y0)
-    plt.figure(figsize=[5,8])
     
     for i in [0,1]:
         if(i):
@@ -92,3 +86,46 @@ if __name__ == '__main__':
         plt.title('a=%.3f, s=%.3f, w=%.3f'%tuple(alone_gp.kernel.param))
     plt.tight_layout()
     plt.show()
+
+    xd = []
+    yd = []
+
+    for i in range(N):
+        tmp_xd = np.random.uniform(0,100,20)
+        xd.append(tmp_xd)
+        yd.append(y(tmp_xd)+np.random.normal(0,1,20))
+    
+    gp = []
+    
+    for i in range(N):
+        gp.append(GausskateiWithMyTheory(kernel, N, i, P, xd[i], yd[i]))
+        gp[i].gakushuu(x0, y0)
+    plt.figure(figsize=[5,8])
+    for i in [0,1]:
+        if (i):
+            multi_gp = copy.deepcopy(gp)
+
+            for i in range(N):
+                for j in range(N):
+                    if i!=j and A[i][j]==1:
+                        multi_gp[j].receive(multi_gp[i].send(j), i)
+                    
+            for t in range(iteration):
+                for i in range(N):
+                    for j in range(N):
+                        if i!=j and A[i][j]==1:
+                            multi_gp[j].receive(multi_gp[i].send(j), i)
+
+                for i in range(N):
+                    multi_gp[i].saitekika(multi_gp[i].xd, multi_gp[i].yd, t=t+1)            
+        
+        plt.subplot(211+i)
+        plt.plot(x0,y0,'. ')
+        mu,std = multi_gp[0].yosoku(x1)
+        plt.plot(x1,y(x1),'--r')
+        plt.plot(x1,mu,'g')
+        plt.fill_between(x1,mu-std,mu+std,alpha=0.2,color='g')
+        plt.title('a=%.3f, s=%.3f, w=%.3f'%tuple(alone_gp.kernel.param))
+    plt.tight_layout()
+    plt.show()
+

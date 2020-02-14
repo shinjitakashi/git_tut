@@ -30,7 +30,7 @@ class Kernel:
         return a1**2*np.exp(-0.5*((x1-x2)/s)**2) + a2**2*(x1==x2)
 
 class GausskateiWithMyTheory():
-    def __init__(self,kernel, N, name, weight):
+    def __init__(self,kernel, N, name, weight, xd, yd):
         self.N = N
 
         self.kernel = kernel
@@ -39,6 +39,7 @@ class GausskateiWithMyTheory():
         self.Hp_send = np.zeros([self.N, 3])
         self.rec_Hp[name] = self.theta
         self.weight = weight
+        self.xd, self.yd = xd, yd
 
     def gakushuu(self,x0: np.array, y0: np.array):
         """カーネル行列: Kを計算する
@@ -122,7 +123,7 @@ class GausskateiWithMyTheory():
         for d in range(3):
             self.grad[d] = np.trace(KD_00_1 @ self.grad_K[:,:,d]) - (KD_00_1 @ y).T @ self.grad_K[:,:,d] @ (KD_00_1 @ y)
 
-    def saitekika(self,xd: np.array, y: np.array, kurikaeshi=1000): # パラメータを調整して学習
+    def saitekika(self, xd, yd, t): # パラメータを調整して学習
         """ハイパーパラメータの最適化
         x_i(t+1) = x_i(t) + Σp_ij(x_ji(t)-x_ij(t)) - a(t)∇f_i(x_i(t))
 
@@ -140,10 +141,9 @@ class GausskateiWithMyTheory():
 
         self.theta = self.kernel.param
 
-        for t in range(kurikaeshi):
-            self.diff = self.rec_Hp - self.Hp_send
-            self.grad_optim(xd, y)
-            self.theta = self.theta + np.dot(self.weight, self.diff) - (0.01/(t+1))*self.grad
+        self.diff = self.rec_Hp - self.Hp_send
+        self.grad_optim(xd, yd)
+        self.theta = self.theta + np.dot(self.weight, self.diff) - (0.01/(t+1))*self.grad
 
         self.kernel.param = self.theta
         self.k00 = self.kernel(*np.meshgrid(self.x0,self.x0))
@@ -152,22 +152,23 @@ class GausskateiWithMyTheory():
     def stepsize(self, t, step) -> float:
         return step / (t+1)
     
-    def receive(self, j, name):
+    def receive(self, state, name):
         """エージェントiからエージェントjの情報を受け取る
         Args:
+            name : 送信してきたエージェント
             rec_Hp (np.array) : 近傍エージェントから受け取ったパラメータ
         """
-        self.rec_Hp[j] = self.send(name, j) 
+        self.rec_Hp[name] = self.send(name)
     
-    def send(self, i, j):
+    def send(self, j):
         """エージェントiからエージェントjの情報を送信する
         Args:
             i : 送信するエージェント
             j : 受信するエージェント
             Hp : ハイパーパラメータ
         """
-        self.Hp_send[i] = self.theta
-        return self.Hp_send[i]
+        self.Hp_send[j] = self.theta
+        return self.Hp_send[j]
 
 class Gausskatei:
     def __init__(self,kernel):
