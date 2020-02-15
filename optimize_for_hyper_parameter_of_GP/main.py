@@ -65,9 +65,9 @@ if __name__ == '__main__':
     find_n = 100 # 既知の点の数
     x0 = np.random.uniform(0,100,find_n) # 既知の点
     y0 = y(x0) + np.random.normal(0,1,find_n)
-    param0 = [2,0.4,1.5] # パラメータの初期値
+    param0 = [[2,0.4,1.5],[1.8,0.3,1.1],[1.9,0.2,1.7]] # パラメータの初期値
     bound = [[1e-2,1e2],[1e-2,1e2],[1e-2,1e2]] # 下限上限
-    kernel = Kernel(param0,bound)
+    kernel = Kernel(param0[0],bound)
     
     x1 = np.linspace(0,100,200) #予測用のデータ
     
@@ -96,19 +96,25 @@ if __name__ == '__main__':
         yd.append(y(tmp_xd)+np.random.normal(0,1,20))
     
     gp = []
-    
+    multi_kernel = []
     for i in range(N):
-        gp.append(GausskateiWithMyTheory(kernel, N, i, P, xd[i], yd[i]))
+        multi_kernel.append(Kernel(param0[i], bound))
+        print(multi_kernel[i].param)
+    for i in range(N):
+        gp.append(GausskateiWithMyTheory(multi_kernel[i], N, i, P, xd[i], yd[i]))
         gp[i].gakushuu(x0, y0)
     plt.figure(figsize=[5,8])
     for i in [0,1]:
         multi_gp = copy.deepcopy(gp)
         if (i):
+            #初期時刻での情報交換
             for i in range(N):
                 for j in range(N):
                     if i!=j and A[i][j]==1:
                         multi_gp[j].receive(multi_gp[i].send(j), i)
-                    
+                multi_gp[i].receive(multi_gp[i].send(i), i)
+                print(multi_gp[i].rec_Hp)
+            
             for t in range(iteration):
                 for i in range(N):
                     for j in range(N):
@@ -116,7 +122,10 @@ if __name__ == '__main__':
                             multi_gp[j].receive(multi_gp[i].send(j), i)
 
                 for i in range(N):
-                    multi_gp[i].saitekika(multi_gp[i].xd, multi_gp[i].yd, t=t+1)            
+                    multi_gp[i].saitekika(t+1)            
+        
+        
+        multi_gp[0].gakushuu(x0, y0)
         
         plt.subplot(211+i)
         plt.plot(x0,y0,'. ')

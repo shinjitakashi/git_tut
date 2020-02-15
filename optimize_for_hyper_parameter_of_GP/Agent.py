@@ -25,6 +25,7 @@ class Kernel:
 
         Returns:
             float: ガウスカーネルの値
+        
         """
         a1,s,a2 = self.param
         return a1**2*np.exp(-0.5*((x1-x2)/s)**2) + a2**2*(x1==x2)
@@ -32,6 +33,7 @@ class Kernel:
 class GausskateiWithMyTheory():
     def __init__(self,kernel, N, name, weight, xd, yd):
         self.N = N
+        self.name = name
 
         self.kernel = kernel
         self.theta = self.kernel.param
@@ -123,7 +125,7 @@ class GausskateiWithMyTheory():
         for d in range(3):
             self.grad[d] = np.trace(KD_00_1 @ self.grad_K[:,:,d]) - (KD_00_1 @ y).T @ self.grad_K[:,:,d] @ (KD_00_1 @ y)
 
-    def saitekika(self, xd, yd, t): # パラメータを調整して学習
+    def saitekika(self, t): # パラメータを調整して学習
         """ハイパーパラメータの最適化
         x_i(t+1) = x_i(t) + Σp_ij(x_ji(t)-x_ij(t)) - a(t)∇f_i(x_i(t))
 
@@ -138,16 +140,18 @@ class GausskateiWithMyTheory():
         Return:
             next_theta (np.array)   : optimization_theta (3×1)
         """
-
         self.theta = self.kernel.param
-
         self.diff = self.rec_Hp - self.Hp_send
-        self.grad_optim(xd, yd)
-        self.theta = self.theta + np.dot(self.weight, self.diff) - (0.01/(t+1))*self.grad
+        self.grad_optim(self.xd, self.yd)
+        print(self.diff)
+        for i in range(3):
+            self.theta[i] = self.theta[i] + np.dot(self.weight, self.diff[i]) - 0.01/(t+1)*self.grad[i]
+        print(self.theta)
+
+        self.Hp_send[self.name] = self.theta
+        self.rec_Hp[self.name] = self.theta
 
         self.kernel.param = self.theta
-        self.k00 = self.kernel(*np.meshgrid(self.x0,self.x0))
-        self.k00_1 = np.linalg.inv(self.k00)
     
     def stepsize(self, t, step) -> float:
         return step / (t+1)
