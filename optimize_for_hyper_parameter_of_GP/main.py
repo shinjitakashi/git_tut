@@ -91,19 +91,18 @@ if __name__ == '__main__':
     yd = []
 
     for i in range(N):
-        tmp_xd = np.random.uniform(0,100,20)
+        tmp_xd = np.random.uniform(0,100,50)
         xd.append(tmp_xd)
-        yd.append(y(tmp_xd)+np.random.normal(0,1,20))
+        yd.append(y(tmp_xd)+np.random.normal(0,1,50))
     
     gp = []
     multi_kernel = []
     for i in range(N):
         multi_kernel.append(Kernel(param0[i], bound))
-        print(multi_kernel[i].param)
     for i in range(N):
         gp.append(GausskateiWithMyTheory(multi_kernel[i], N, i, P, xd[i], yd[i]))
         gp[i].gakushuu(x0, y0)
-    plt.figure(figsize=[5,8])
+
     for i in [0,1]:
         multi_gp = copy.deepcopy(gp)
         if (i):
@@ -111,11 +110,12 @@ if __name__ == '__main__':
             for i in range(N):
                 for j in range(N):
                     if i!=j and A[i][j]==1:
-                        multi_gp[j].receive(multi_gp[i].send(j), i)
-                multi_gp[i].receive(multi_gp[i].send(i), i)
-                print(multi_gp[i].rec_Hp)
+                        multi_gp[j].receive(multi_gp[i].send(j),i)
+                multi_gp[i].Hp_send[i] = multi_gp[i].theta
             
             for t in range(iteration):
+                if (t%100)==0:            
+                    print(str(t) + '回目')
                 for i in range(N):
                     for j in range(N):
                         if i!=j and A[i][j]==1:
@@ -126,14 +126,13 @@ if __name__ == '__main__':
         
         
         multi_gp[0].gakushuu(x0, y0)
-        
-        plt.subplot(211+i)
+       
         plt.plot(x0,y0,'. ')
         mu,std = multi_gp[0].yosoku(x1)
         plt.plot(x1,y(x1),'--r')
         plt.plot(x1,mu,'g')
         plt.fill_between(x1,mu-std,mu+std,alpha=0.2,color='g')
         plt.title('a=%.3f, s=%.3f, w=%.3f'%tuple(multi_gp[0].kernel.param))
-    plt.tight_layout()
-    plt.show()
+        plt.tight_layout()
+        plt.show()
 

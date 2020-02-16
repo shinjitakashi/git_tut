@@ -141,12 +141,13 @@ class GausskateiWithMyTheory():
             next_theta (np.array)   : optimization_theta (3×1)
         """
         self.theta = self.kernel.param
-        self.diff = self.rec_Hp - self.Hp_send
+        self.rec_Hp[self.name] = self.theta
+        self.Hp_send[self.name] = self.theta
+        self.diff = self.rec_Hp - self.Hp_send #3×3の行列となるはず
         self.grad_optim(self.xd, self.yd)
-        print(self.diff)
+
         for i in range(3):
-            self.theta[i] = self.theta[i] + np.dot(self.weight, self.diff[i]) - 0.01/(t+1)*self.grad[i]
-        print(self.theta)
+            self.theta[i] = self.theta[i] + np.dot(self.weight[i], self.diff[:,i]) - 0.01/(t+1)*self.grad[i]
 
         self.Hp_send[self.name] = self.theta
         self.rec_Hp[self.name] = self.theta
@@ -162,7 +163,8 @@ class GausskateiWithMyTheory():
             name : 送信してきたエージェント
             rec_Hp (np.array) : 近傍エージェントから受け取ったパラメータ
         """
-        self.rec_Hp[name] = self.send(name)
+        
+        self.rec_Hp[name] = state
     
     def send(self, j):
         """エージェントiからエージェントjの情報を送信する
