@@ -22,7 +22,7 @@ if __name__ == '__main__':
     wc = 0.8
 
     #Number of iterations
-    iteration = 1000
+    iteration = 5000
 
     #Coefficient of decision of stepsize : E_ij(t) = E(t) = eventtrigger / (t+1)
     eventtrigger = [0, 1, 5]
@@ -65,7 +65,7 @@ if __name__ == '__main__':
     find_n = 100 # 既知の点の数
     x0 = np.random.uniform(0,100,find_n) # 既知の点
     y0 = y(x0) + np.random.normal(0,1,find_n)
-    param0 = [[2,0.4,1.5],[1.8,0.3,1.1],[1.9,0.2,1.7]] # パラメータの初期値
+    param0 = [[2,0.4,1.5],[1.8,1.3,2.1],[1.9,1.2,1.7]] # パラメータの初期値
     bound = [[1e-2,1e2],[1e-2,1e2],[1e-2,1e2]] # 下限上限
     kernel = Kernel(param0[0],bound)
     
@@ -91,9 +91,9 @@ if __name__ == '__main__':
     yd = []
 
     for i in range(N):
-        tmp_xd = np.random.uniform(0,100,50)
+        tmp_xd = np.random.uniform(0,100,30)
         xd.append(tmp_xd)
-        yd.append(y(tmp_xd)+np.random.normal(0,1,50))
+        yd.append(y(tmp_xd)+np.random.normal(0,1,30))
     
     gp = []
     multi_kernel = []
@@ -114,7 +114,7 @@ if __name__ == '__main__':
                 multi_gp[i].Hp_send[i] = multi_gp[i].theta
             
             for t in range(iteration):
-                if (t%100)==0:            
+                if (t%1000)==0:            
                     print(str(t) + '回目')
                 for i in range(N):
                     for j in range(N):
