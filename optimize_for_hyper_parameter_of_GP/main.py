@@ -22,7 +22,7 @@ if __name__ == '__main__':
     wc = 0.8
 
     #Number of iterations
-    iteration = 5000
+    iteration = 100
 
     #Coefficient of decision of stepsize : E_ij(t) = E(t) = eventtrigger / (t+1)
     eventtrigger = [0, 1, 5]
@@ -65,10 +65,14 @@ if __name__ == '__main__':
     find_n = 100 # 既知の点の数
     x0 = np.random.uniform(0,100,find_n) # 既知の点
     y0 = y(x0) + np.random.normal(0,0.5,find_n)
-    param0 = [[1.5,0.4,2.7],[2.3,2.8,1.3],[1.2,1.2,1.7]] # パラメータの初期値
+    param0 = [[4.5,5.4,2.3],[3.3,8.8,0.6],[1.2,7.2,1.7]] # パラメータの初期値
     #param0 =[[1.5,0.4,2.7],[2.3,1.8,1.3],[3.2,1.2,0.7]]
     # [[1.5,0.4,2.7],[2.3,2.8,1.3],[3.2,1.2,1.7]]
     # [[1.5,3.4,2.7],[2.3,2.8,1.3],[3.2,1.2,1.7]] これいい！！
+    """
+    0に関して，制約をつけないとリプシッツ連続性を言えなくなるため，
+    boundにて，制約をつけペナルティ関数法を用いてアルゴリズムの実装を行う．
+    """
     bound = [[1e-2,1e2],[1e-2,1e2],[1e-2,1e2]] # 下限上限
     kernel = Kernel(param0[0],bound)
     
@@ -106,6 +110,8 @@ if __name__ == '__main__':
         gp.append(GausskateiWithMyTheory(multi_kernel[i], N, i, P, xd[i], yd[i]))
         gp[i].gakushuu(x0, y0)
 
+    normalize_error = []
+
     for i in [0,1]:
         multi_gp = copy.deepcopy(gp)
         if (i):
@@ -125,8 +131,15 @@ if __name__ == '__main__':
                             multi_gp[j].receive(multi_gp[i].send(j), i)
 
                 for i in range(N):
-                    multi_gp[i].saitekika(t+1)            
-        
+                    multi_gp[i].saitekika(t+1)
+
+                tmp_normalize_error = 0
+                multi_gp[0].gakushuu(x0,y0)
+                mu,std = multi_gp[0].yosoku(x1)
+                seikai = y(x1)
+                for i in range(len(x1)):
+                    tmp_normalize_error += np.abs(mu[i] - seikai[i])**2   
+                normalize_error.append(tmp_normalize_error)
         
         multi_gp[0].gakushuu(x0, y0)
        
@@ -138,4 +151,9 @@ if __name__ == '__main__':
         plt.title('a=%.3f, s=%.3f, w=%.3f'%tuple(multi_gp[0].kernel.param))
         plt.tight_layout()
         plt.show()
+        
+        if (i):
+            plt.title('normalize_error')
+            plt.plot(np.arange(0,iteration), normalize_error)
+            plt.show()
 
