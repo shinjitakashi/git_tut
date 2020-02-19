@@ -89,7 +89,7 @@ class GausskateiWithMyTheory():
             k00_1 = np.linalg.inv(k00)
         return -(np.linalg.slogdet(k00)[1]+self.y0.dot(k00_1.dot(self.y0)))
 
-    def kgrad (self, xi: np.array ,xj: np.array ,d) -> float:
+    def kgrad (self, xi: np.array ,xj: np.array ,d, rou=0.01) -> float:
         """アルゴリズムに必要な勾配
 
         Args:
@@ -100,11 +100,26 @@ class GausskateiWithMyTheory():
         """
         theta = self.kernel.param
         if d == 0:
-            return 2*theta[0]*np.exp(-0.5*theta[1]*np.linalg.norm(xi-xj)**2)
+            if theta[0] <= 0:
+                return 2*theta[0]*np.exp(-0.5*theta[1]*np.linalg.norm(xi-xj)**2) + rou/self.N*2*theta[0]
+            elif 0 < theta[0] < 100:
+                return 2*theta[0]*np.exp(-0.5*theta[1]*np.linalg.norm(xi-xj)**2)
+            elif 100 <= theta[0]:
+                return 2*theta[0]*np.exp(-0.5*theta[1]*np.linalg.norm(xi-xj)**2) + rou/self.N*2*(theta[0]-100)
         elif d == 1:
-            return theta[0]**2*np.exp(-0.5*(np.linalg.norm(xi-xj)/theta[1])**2)*(-(np.linalg.norm(xi-xj)/theta[1]))*(-np.linalg.norm(xi-xj)/theta[1]**2)
+            if theta[1] <= 0:
+               return theta[0]**2*np.exp(-0.5*(np.linalg.norm(xi-xj)/theta[1])**2)*(-(np.linalg.norm(xi-xj)/theta[1]))*(-np.linalg.norm(xi-xj)/theta[1]**2) + rou/self.N*2*theta[1]
+            elif 0 < theta[1] < 100:
+                return theta[0]**2*np.exp(-0.5*(np.linalg.norm(xi-xj)/theta[1])**2)*(-(np.linalg.norm(xi-xj)/theta[1]))*(-np.linalg.norm(xi-xj)/theta[1]**2)
+            elif 100 <= theta[1]:
+                return theta[0]**2*np.exp(-0.5*(np.linalg.norm(xi-xj)/theta[1])**2)*(-(np.linalg.norm(xi-xj)/theta[1]))*(-np.linalg.norm(xi-xj)/theta[1]**2) + rou/self.N*2*(theta[1]-100)
         elif d == 2:
-            return (xj==xi)
+            if theta[2] <= 0:
+                return (xj==xi) + rou/self.N*2*theta[2]
+            elif 0 < theta[2] < 100:
+                return (xj==xi)
+            elif 100 < theta[2]:
+                return (xj==xi) + rou/self.N*2*(theta[2]-100) 
 
     def kernel_matrix_grad(self, xd: np.array) -> np.array:
         self.grad_K = np.zeros((len(xd), len(xd), 3))
