@@ -10,19 +10,19 @@ from Agent import *
 if __name__ == '__main__':
     #Parameters
     #Number of agents
-    N = 3
+    N = 5
 
     #Number of dimensions of the decision variable
-    n = 3
+    n = 5
 
     #Coefficient of decision of stepsize : a(t) = a / t
-    stepsize = 0.008
+    stepsize = 0.1
             
     # Coefficient of the edge weight  w_if = wc / max_degree
-    wc = 0.8
+    wc = 0.5
 
     #Number of iterations
-    iteration = 1000
+    iteration = 100
 
     #Coefficient of decision of stepsize : E_ij(t) = E(t) = eventtrigger / (t+1)
     eventtrigger = [0, 1, 5]
@@ -33,9 +33,12 @@ if __name__ == '__main__':
     #======================================================================#
     #Communication Graph
     A = np.array(
-    [[1, 1, 1],
-     [1, 1, 0],
-     [1, 0, 1]])
+    [[1, 1, 0, 1, 0],
+     [1, 1, 0, 1, 0],
+     [0, 0, 1, 1, 1],
+     [1, 1, 1, 1, 0],
+     [0, 0, 1, 0, 1]
+     ])
 
     G = nx.from_numpy_matrix(A)
 
@@ -62,10 +65,10 @@ if __name__ == '__main__':
     def y(x): # 実際の関数
         return 5*np.sin(np.pi/15*x)*np.exp(-x/50)
 
-    find_n = 100 # 既知の点の数
-    x0 = np.random.uniform(0,100,find_n) # 既知の点
+    find_n = 200 # 既知の点の数
+    x0 = np.random.uniform(0,500,find_n) # 既知の点
     y0 = y(x0) + np.random.normal(0,0.5,find_n)
-    param0 = [[10.5,12.4,0.3],[5.3,5.8,0.6],[1.2,7.2,1.7]] # パラメータの初期値
+    param0 = [[0.5,4.4,0.3],[12.3,1.8,0.6],[1.2,9.2,1.7],[0.2,3,0.2],[1.4,7.3,3]] # パラメータの初期値
     #param0 =[[1.5,0.4,2.7],[2.3,1.8,1.3],[3.2,1.2,0.7]]
     # [[1.5,0.4,2.7],[2.3,2.8,1.3],[3.2,1.2,1.7]]
     # [[1.5,3.4,2.7],[2.3,2.8,1.3],[3.2,1.2,1.7]] これいい！！
@@ -76,7 +79,7 @@ if __name__ == '__main__':
     bound = [[1e-2,1e2],[1e-2,1e2],[1e-2,1e2]] # 下限上限
     kernel = Kernel(param0[0],bound)
     
-    x1 = np.linspace(0,100,200) #予測用のデータ
+    x1 = np.linspace(0,500,1000) #予測用のデータ
     
     # alone_gp = Gausskatei(kernel) 
     # alone_gp.gakushuu(x0,y0)
@@ -112,7 +115,7 @@ if __name__ == '__main__':
 
     normalize_error = []
 
-    tmp_normalize_error = [0,0,0]
+    tmp_normalize_error = [0] * N
     
     for q in range(N):
         mu,std = gp[q].yosoku(x1)
@@ -147,7 +150,7 @@ if __name__ == '__main__':
                 for i in range(N):
                     multi_gp[i].saitekika(t+1)
 
-                tmp_normalize_error = [0,0,0]
+                tmp_normalize_error = [0]*N
 
                 for q in range(N):
                     multi_gp[q].gakushuu(x0,y0)
@@ -158,38 +161,16 @@ if __name__ == '__main__':
                 
                 normalize_error.append(tmp_normalize_error[0] + tmp_normalize_error[1] + tmp_normalize_error[2])
         
-        multi_gp[0].gakushuu(x0, y0)
-       
-        plt.plot(x0,y0,'. ')
-        mu,std = multi_gp[0].yosoku(x1)
-        plt.plot(x1,y(x1),'--r')
-        plt.plot(x1,mu,'g')
-        plt.fill_between(x1,mu-std,mu+std,alpha=0.2,color='g')
-        plt.title('a=%.3f, s=%.3f, w=%.3f'%tuple(multi_gp[0].kernel.param) + str(multi_gp[0].name))
-        plt.tight_layout()
-        plt.show()
-        
-        multi_gp[1].gakushuu(x0, y0)
-       
-        plt.plot(x0,y0,'. ')
-        mu,std = multi_gp[1].yosoku(x1)
-        plt.plot(x1,y(x1),'--r')
-        plt.plot(x1,mu,'g')
-        plt.fill_between(x1,mu-std,mu+std,alpha=0.2,color='g')
-        plt.title('a=%.3f, s=%.3f, w=%.3f'%tuple(multi_gp[1].kernel.param) + str(multi_gp[1].name))
-        plt.tight_layout()
-        plt.show()
-
-        multi_gp[2].gakushuu(x0, y0)
-       
-        plt.plot(x0,y0,'. ')
-        mu,std = multi_gp[2].yosoku(x1)
-        plt.plot(x1,y(x1),'--r')
-        plt.plot(x1,mu,'g')
-        plt.fill_between(x1,mu-std,mu+std,alpha=0.2,color='g')
-        plt.title('a=%.3f, s=%.3f, w=%.3f'%tuple(multi_gp[2].kernel.param) + str(multi_gp[2].name))
-        plt.tight_layout()
-        plt.show()
+        for d in range(N):
+            multi_gp[d].gakushuu(x0,y0)
+            plt.plot(x0,y0,'. ')
+            mu,std = multi_gp[d].yosoku(x1)
+            plt.plot(x1,y(x1),'--r')
+            plt.plot(x1,mu,'g')
+            plt.fill_between(x1,mu-std,mu+std,alpha=0.2,color='g')
+            plt.title('a=%.3f, s=%.3f, w=%.3f'%tuple(multi_gp[d].kernel.param) + str(multi_gp[d].name))
+            plt.tight_layout()
+            plt.show()
 
         if (i):
             plt.title('normalize_error')

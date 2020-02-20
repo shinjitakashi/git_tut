@@ -89,7 +89,7 @@ class GausskateiWithMyTheory():
             k00_1 = np.linalg.inv(k00)
         return -(np.linalg.slogdet(k00)[1]+self.y0.dot(k00_1.dot(self.y0)))
 
-    def kgrad (self, xi: np.array ,xj: np.array ,d, rou=0.01) -> float:
+    def kgrad (self, xi: np.array ,xj: np.array ,d) -> float:
         """アルゴリズムに必要な勾配
 
         Args:
@@ -99,28 +99,13 @@ class GausskateiWithMyTheory():
             勾配 (int)  : 勾配
         """
         theta = self.kernel.param
-        if d == 0:
-            if theta[0] <= self.kernel.bound[0][0]:
-                return 2*theta[0]*np.exp(-0.5*theta[1]*np.linalg.norm(xi-xj)**2) + rou/self.N*2*theta[0]
-            elif self.kernel.bound[0][0] < theta[0] < self.kernel.bound[0][1]:
-                return 2*theta[0]*np.exp(-0.5*theta[1]*np.linalg.norm(xi-xj)**2)
-            elif self.kernel.bound[0][1] <= theta[0]:
-                return 2*theta[0]*np.exp(-0.5*theta[1]*np.linalg.norm(xi-xj)**2) + rou/self.N*2*(theta[0]-100)
+        if d == 0:   
+            return 2*theta[0]*np.exp(-0.5*theta[1]*np.linalg.norm(xi-xj)**2)
         elif d == 1:
-            if theta[1] <= self.kernel.bound[1][0]:
-               return theta[0]**2*np.exp(-0.5*(np.linalg.norm(xi-xj)/theta[1])**2)*(-(np.linalg.norm(xi-xj)/theta[1]))*(-np.linalg.norm(xi-xj)/theta[1]**2) + rou/self.N*2*theta[1]
-            elif self.kernel.bound[1][0] < theta[1] < self.kernel.bound[1][1]:
-                return theta[0]**2*np.exp(-0.5*(np.linalg.norm(xi-xj)/theta[1])**2)*(-(np.linalg.norm(xi-xj)/theta[1]))*(-np.linalg.norm(xi-xj)/theta[1]**2)
-            elif self.kernel.bound[1][1] <= theta[1]:
-                return theta[0]**2*np.exp(-0.5*(np.linalg.norm(xi-xj)/theta[1])**2)*(-(np.linalg.norm(xi-xj)/theta[1]))*(-np.linalg.norm(xi-xj)/theta[1]**2) + rou/self.N*2*(theta[1]-100)
+            return theta[0]**2*np.exp(-0.5*(np.linalg.norm(xi-xj)/theta[1])**2)*(-(np.linalg.norm(xi-xj)/theta[1]))*(-np.linalg.norm(xi-xj)/theta[1]**2)
         elif d == 2:
-            if theta[2] <= self.kernel.bound[2][0]:
-                return (xj==xi) + rou/self.N*2*theta[2]
-            elif self.kernel.bound[2][0] < theta[2] < self.kernel.bound[2][1]:
-                return (xj==xi)
-            elif self.kernel.bound[2][1] < theta[2]:
-                return (xj==xi) + rou/self.N*2*(theta[2]-100) 
-
+            return (xj==xi)
+        
     def kernel_matrix_grad(self, xd: np.array) -> np.array:
         self.grad_K = np.zeros((len(xd), len(xd), 3))
         
@@ -129,7 +114,7 @@ class GausskateiWithMyTheory():
                 for q in range(3):
                     self.grad_K[i][j][q] = self.kgrad(xd[i], xd[j], q)
     
-    def grad_optim(self, xd: np.array, y: np.array) -> np.array: 
+    def grad_optim(self, xd: np.array, y: np.array, rou=10) -> np.array: 
         KD_00 = self.kernel(*np.meshgrid(xd,xd))
         KD_00_1 = np.linalg.inv(KD_00)
 
@@ -138,7 +123,14 @@ class GausskateiWithMyTheory():
         self.grad = np.zeros(3)
 
         for d in range(3):
-            self.grad[d] = np.trace(KD_00_1 @ self.grad_K[:,:,d]) - (KD_00_1 @ y).T @ self.grad_K[:,:,d] @ (KD_00_1 @ y)
+            if self.kernel.param[d] <= self.kernel.bound[d][0]:
+                self.grad[d] = np.trace(KD_00_1 @ self.grad_K[:,:,d]) - (KD_00_1 @ y).T @ self.grad_K[:,:,d] @ (KD_00_1 @ y) + rou/self.N*2*(self.kernel.param[d]-self.kernel.bound[d][0])
+            elif self.kernel.bound[d][0] < self.kernel.param[d] < self.kernel.bound[d][1]:
+                self.grad[d] = np.trace(KD_00_1 @ self.grad_K[:,:,d]) - (KD_00_1 @ y).T @ self.grad_K[:,:,d] @ (KD_00_1 @ y)
+            elif self.kernel.bound[d][1] <= self.kernel.param[d]:
+                print(self.kernel.param)
+                self.grad[d] = np.trace(KD_00_1 @ self.grad_K[:,:,d]) - (KD_00_1 @ y).T @ self.grad_K[:,:,d] @ (KD_00_1 @ y) + rou/self.N*2*(self.kernel.param[d]-self.kernel.bound[d][1])
+
 
     def saitekika(self, t): # パラメータを調整して学習
         """ハイパーパラメータの最適化
