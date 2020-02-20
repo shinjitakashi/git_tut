@@ -128,7 +128,7 @@ class GausskateiWithMyTheory():
             elif self.kernel.bound[d][0] < self.kernel.param[d] < self.kernel.bound[d][1]:
                 self.grad[d] = np.trace(KD_00_1 @ self.grad_K[:,:,d]) - (KD_00_1 @ y).T @ self.grad_K[:,:,d] @ (KD_00_1 @ y)
             elif self.kernel.bound[d][1] <= self.kernel.param[d]:
-                print(self.kernel.param)
+                print(self.kernel.param, self.name)
                 self.grad[d] = np.trace(KD_00_1 @ self.grad_K[:,:,d]) - (KD_00_1 @ y).T @ self.grad_K[:,:,d] @ (KD_00_1 @ y) + rou/self.N*2*(self.kernel.param[d]-self.kernel.bound[d][1])
 
 

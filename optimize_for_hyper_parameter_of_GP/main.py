@@ -16,13 +16,13 @@ if __name__ == '__main__':
     n = 5
 
     #Coefficient of decision of stepsize : a(t) = a / t
-    stepsize = 0.1
+    stepsize = 0.08
             
     # Coefficient of the edge weight  w_if = wc / max_degree
-    wc = 0.5
+    wc = 0.6
 
     #Number of iterations
-    iteration = 100
+    iteration = 30
 
     #Coefficient of decision of stepsize : E_ij(t) = E(t) = eventtrigger / (t+1)
     eventtrigger = [0, 1, 5]
@@ -33,11 +33,11 @@ if __name__ == '__main__':
     #======================================================================#
     #Communication Graph
     A = np.array(
-    [[1, 1, 0, 1, 0],
+    [[1, 1, 0, 1, 1],
      [1, 1, 0, 1, 0],
      [0, 0, 1, 1, 1],
      [1, 1, 1, 1, 0],
-     [0, 0, 1, 0, 1]
+     [1, 0, 1, 0, 1]
      ])
 
     G = nx.from_numpy_matrix(A)
@@ -65,10 +65,10 @@ if __name__ == '__main__':
     def y(x): # 実際の関数
         return 5*np.sin(np.pi/15*x)*np.exp(-x/50)
 
-    find_n = 200 # 既知の点の数
-    x0 = np.random.uniform(0,500,find_n) # 既知の点
+    find_n = 150 # 既知の点の数
+    x0 = np.random.uniform(0,200,find_n) # 既知の点
     y0 = y(x0) + np.random.normal(0,0.5,find_n)
-    param0 = [[0.5,4.4,0.3],[12.3,1.8,0.6],[1.2,9.2,1.7],[0.2,3,0.2],[1.4,7.3,3]] # パラメータの初期値
+    param0 = [[11.5,15.2,0.3],[14.3,1.8,0.6],[1.2,13.2,1.7],[10.8,8.3,0.2],[7.4,9.3,3]] # パラメータの初期値
     #param0 =[[1.5,0.4,2.7],[2.3,1.8,1.3],[3.2,1.2,0.7]]
     # [[1.5,0.4,2.7],[2.3,2.8,1.3],[3.2,1.2,1.7]]
     # [[1.5,3.4,2.7],[2.3,2.8,1.3],[3.2,1.2,1.7]] これいい！！
@@ -77,9 +77,9 @@ if __name__ == '__main__':
     boundにて，制約をつけペナルティ関数法を用いてアルゴリズムの実装を行う．
     """
     bound = [[1e-2,1e2],[1e-2,1e2],[1e-2,1e2]] # 下限上限
-    kernel = Kernel(param0[0],bound)
+    #kernel = Kernel(param0[0],bound)
     
-    x1 = np.linspace(0,500,1000) #予測用のデータ
+    x1 = np.linspace(0,200,400) #予測用のデータ
     
     # alone_gp = Gausskatei(kernel) 
     # alone_gp.gakushuu(x0,y0)
@@ -101,9 +101,9 @@ if __name__ == '__main__':
     yd = []
 
     for i in range(N):
-        tmp_xd = np.random.uniform(0,100,30)
+        tmp_xd = np.random.uniform(0,200,30)
         xd.append(tmp_xd)
-        yd.append(y(tmp_xd)+np.random.normal(0,1,30))
+        yd.append(y(tmp_xd)+np.random.normal(0,0.5,30))
     
     gp = []
     multi_kernel = []
@@ -163,6 +163,7 @@ if __name__ == '__main__':
         
         for d in range(N):
             multi_gp[d].gakushuu(x0,y0)
+            plt.subplot(321+d)
             plt.plot(x0,y0,'. ')
             mu,std = multi_gp[d].yosoku(x1)
             plt.plot(x1,y(x1),'--r')
@@ -170,7 +171,8 @@ if __name__ == '__main__':
             plt.fill_between(x1,mu-std,mu+std,alpha=0.2,color='g')
             plt.title('a=%.3f, s=%.3f, w=%.3f'%tuple(multi_gp[d].kernel.param) + str(multi_gp[d].name))
             plt.tight_layout()
-            plt.show()
+
+        plt.show()    
 
         if (i):
             plt.title('normalize_error')
