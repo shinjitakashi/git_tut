@@ -11,7 +11,11 @@ if __name__=='__main__':
 
     n = 100 # 既知の点の数
     x0 = np.random.uniform(0,100,n) # 既知の点
-    y0 = y(x0) + np.random.normal(0,1,n)
+    y0 = y(x0) + np.random.normal(0,0.5,n)
+    #最適化用のデータxd
+    xd = np.random.uniform(0,100,30)
+    yd = y(xd) + np.random.normal(0,0.5,30)
+
     param0 = [3,0.6,0.5] # パラメータの初期値
     bound = [[1e-2,1e2],[1e-2,1e2],[1e-2,1e2]] # 下限上限
     kernel = Kernel(param0,bound)
@@ -21,7 +25,7 @@ if __name__=='__main__':
     plt.figure(figsize=[5,8])
     for i in [0,1]:
         if(i):
-            gp.saitekika(x0,y0,10000) # パラメータを調整する
+            gp.saitekika(xd,yd,10000) # パラメータを調整する
         plt.subplot(211+i)
         plt.plot(x0,y0,'. ')
         mu,std = gp.yosoku(x1)
