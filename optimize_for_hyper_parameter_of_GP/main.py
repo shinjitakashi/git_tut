@@ -22,7 +22,7 @@ if __name__ == '__main__':
     wc = 0.8
 
     #Number of iterations
-    iteration = 100
+    iteration = 1000
 
     #Coefficient of decision of stepsize : E_ij(t) = E(t) = eventtrigger / (t+1)
     eventtrigger = [0, 1, 5]
@@ -65,7 +65,7 @@ if __name__ == '__main__':
     find_n = 100 # 既知の点の数
     x0 = np.random.uniform(0,100,find_n) # 既知の点
     y0 = y(x0) + np.random.normal(0,0.5,find_n)
-    param0 = [[4.5,5.4,2.3],[3.3,8.8,0.6],[1.2,7.2,1.7]] # パラメータの初期値
+    param0 = [[10.5,12.4,0.3],[5.3,5.8,0.6],[1.2,7.2,1.7]] # パラメータの初期値
     #param0 =[[1.5,0.4,2.7],[2.3,1.8,1.3],[3.2,1.2,0.7]]
     # [[1.5,0.4,2.7],[2.3,2.8,1.3],[3.2,1.2,1.7]]
     # [[1.5,3.4,2.7],[2.3,2.8,1.3],[3.2,1.2,1.7]] これいい！！
@@ -112,6 +112,17 @@ if __name__ == '__main__':
 
     normalize_error = []
 
+    tmp_normalize_error = [0,0,0]
+    
+    for q in range(N):
+        mu,std = gp[q].yosoku(x1)
+        seikai = y(x1)
+        for j in range(len(x1)):
+            tmp_normalize_error[q] += np.abs(mu[j] - seikai[j])**2   
+                
+    initial_error = tmp_normalize_error[0] + tmp_normalize_error[1] + tmp_normalize_error[2]
+
+
     for i in [0,1]:
         multi_gp = copy.deepcopy(gp)
         if (i):
@@ -123,7 +134,10 @@ if __name__ == '__main__':
                 multi_gp[i].Hp_send[i] = multi_gp[i].theta
             
             for t in range(iteration):
-                if (t%1000)==0:            
+                if t==0:
+                    normalize_error.append(initial_error)
+                
+                if (t%100)==0:            
                     print(str(t) + '回目')
                 for i in range(N):
                     for j in range(N):
@@ -133,13 +147,16 @@ if __name__ == '__main__':
                 for i in range(N):
                     multi_gp[i].saitekika(t+1)
 
-                tmp_normalize_error = 0
-                multi_gp[0].gakushuu(x0,y0)
-                mu,std = multi_gp[0].yosoku(x1)
-                seikai = y(x1)
-                for i in range(len(x1)):
-                    tmp_normalize_error += np.abs(mu[i] - seikai[i])**2   
-                normalize_error.append(tmp_normalize_error)
+                tmp_normalize_error = [0,0,0]
+
+                for q in range(N):
+                    multi_gp[q].gakushuu(x0,y0)
+                    mu,std = multi_gp[q].yosoku(x1)
+                    seikai = y(x1)
+                    for j in range(len(x1)):
+                        tmp_normalize_error[q] += np.abs(mu[j] - seikai[j])**2   
+                
+                normalize_error.append(tmp_normalize_error[0] + tmp_normalize_error[1] + tmp_normalize_error[2])
         
         multi_gp[0].gakushuu(x0, y0)
        
@@ -148,12 +165,35 @@ if __name__ == '__main__':
         plt.plot(x1,y(x1),'--r')
         plt.plot(x1,mu,'g')
         plt.fill_between(x1,mu-std,mu+std,alpha=0.2,color='g')
-        plt.title('a=%.3f, s=%.3f, w=%.3f'%tuple(multi_gp[0].kernel.param))
+        plt.title('a=%.3f, s=%.3f, w=%.3f'%tuple(multi_gp[0].kernel.param) + str(multi_gp[0].name))
         plt.tight_layout()
         plt.show()
         
+        multi_gp[1].gakushuu(x0, y0)
+       
+        plt.plot(x0,y0,'. ')
+        mu,std = multi_gp[1].yosoku(x1)
+        plt.plot(x1,y(x1),'--r')
+        plt.plot(x1,mu,'g')
+        plt.fill_between(x1,mu-std,mu+std,alpha=0.2,color='g')
+        plt.title('a=%.3f, s=%.3f, w=%.3f'%tuple(multi_gp[1].kernel.param) + str(multi_gp[1].name))
+        plt.tight_layout()
+        plt.show()
+
+        multi_gp[2].gakushuu(x0, y0)
+       
+        plt.plot(x0,y0,'. ')
+        mu,std = multi_gp[2].yosoku(x1)
+        plt.plot(x1,y(x1),'--r')
+        plt.plot(x1,mu,'g')
+        plt.fill_between(x1,mu-std,mu+std,alpha=0.2,color='g')
+        plt.title('a=%.3f, s=%.3f, w=%.3f'%tuple(multi_gp[2].kernel.param) + str(multi_gp[2].name))
+        plt.tight_layout()
+        plt.show()
+
         if (i):
             plt.title('normalize_error')
-            plt.plot(np.arange(0,iteration), normalize_error)
+            plt.plot(np.arange(0,iteration+1), np.array(normalize_error)/initial_error)
+            plt.yscale('log')
             plt.show()
 

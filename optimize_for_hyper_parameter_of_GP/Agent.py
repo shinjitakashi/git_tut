@@ -100,25 +100,25 @@ class GausskateiWithMyTheory():
         """
         theta = self.kernel.param
         if d == 0:
-            if theta[0] <= 0:
+            if theta[0] <= self.kernel.bound[0][0]:
                 return 2*theta[0]*np.exp(-0.5*theta[1]*np.linalg.norm(xi-xj)**2) + rou/self.N*2*theta[0]
-            elif 0 < theta[0] < 100:
+            elif self.kernel.bound[0][0] < theta[0] < self.kernel.bound[0][1]:
                 return 2*theta[0]*np.exp(-0.5*theta[1]*np.linalg.norm(xi-xj)**2)
-            elif 100 <= theta[0]:
+            elif self.kernel.bound[0][1] <= theta[0]:
                 return 2*theta[0]*np.exp(-0.5*theta[1]*np.linalg.norm(xi-xj)**2) + rou/self.N*2*(theta[0]-100)
         elif d == 1:
-            if theta[1] <= 0:
+            if theta[1] <= self.kernel.bound[1][0]:
                return theta[0]**2*np.exp(-0.5*(np.linalg.norm(xi-xj)/theta[1])**2)*(-(np.linalg.norm(xi-xj)/theta[1]))*(-np.linalg.norm(xi-xj)/theta[1]**2) + rou/self.N*2*theta[1]
-            elif 0 < theta[1] < 100:
+            elif self.kernel.bound[1][0] < theta[1] < self.kernel.bound[1][1]:
                 return theta[0]**2*np.exp(-0.5*(np.linalg.norm(xi-xj)/theta[1])**2)*(-(np.linalg.norm(xi-xj)/theta[1]))*(-np.linalg.norm(xi-xj)/theta[1]**2)
-            elif 100 <= theta[1]:
+            elif self.kernel.bound[1][1] <= theta[1]:
                 return theta[0]**2*np.exp(-0.5*(np.linalg.norm(xi-xj)/theta[1])**2)*(-(np.linalg.norm(xi-xj)/theta[1]))*(-np.linalg.norm(xi-xj)/theta[1]**2) + rou/self.N*2*(theta[1]-100)
         elif d == 2:
-            if theta[2] <= 0:
+            if theta[2] <= self.kernel.bound[2][0]:
                 return (xj==xi) + rou/self.N*2*theta[2]
-            elif 0 < theta[2] < 100:
+            elif self.kernel.bound[2][0] < theta[2] < self.kernel.bound[2][1]:
                 return (xj==xi)
-            elif 100 < theta[2]:
+            elif self.kernel.bound[2][1] < theta[2]:
                 return (xj==xi) + rou/self.N*2*(theta[2]-100) 
 
     def kernel_matrix_grad(self, xd: np.array) -> np.array:
