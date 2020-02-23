@@ -110,73 +110,120 @@ if __name__ == '__main__':
     for i in range(N):
         multi_kernel.append(Kernel(param0[i], bound))
     for i in range(N):
-        gp.append(GausskateiWithMyTheory(multi_kernel[i], N, i, P, xd[i], yd[i]))
+        gp.append(GausskateiWithMyTheory(multi_kernel[i], N, i, P, xd[i], yd[i], eventtrigger))
         gp[i].gakushuu(x0, y0)
 
-    normalize_error = []
+    normalize_error = [[],[],[]]
 
     tmp_normalize_error = [0] * N
-    
+
     for q in range(N):
         mu,std = gp[q].yosoku(x1)
         seikai = y(x1)
         for j in range(len(x1)):
             tmp_normalize_error[q] += np.abs(mu[j] - seikai[j])**2   
-                
-    initial_error = tmp_normalize_error[0] + tmp_normalize_error[1] + tmp_normalize_error[2]
 
+    initial_error = 0
+    for q in range(N):
+        initial_error += tmp_normalize_error[q]
+
+    #勾配の変化を示すarray
+    #gradient_array = [0]*range(eventtrigger)
+
+    terminal_count = [[],[],[]]
 
     for i in [0,1]:
         multi_gp = copy.deepcopy(gp)
+
         if (i):
-            #初期時刻での情報交換
-            for i in range(N):
-                for j in range(N):
-                    if i!=j and A[i][j]==1:
-                        multi_gp[j].receive(multi_gp[i].send(j),i)
-                multi_gp[i].Hp_send[i] = multi_gp[i].theta
-            
-            for t in range(iteration):
-                if t==0:
-                    normalize_error.append(initial_error)
-                
-                if (t%100)==0:            
-                    print(str(t) + '回目')
+            for e in range(len(eventtrigger)):
+                count = 0
+
+                print('E=', str(multi_gp[0].param_for_event[e]))
+                #初期時刻での情報交換
                 for i in range(N):
                     for j in range(N):
                         if i!=j and A[i][j]==1:
-                            multi_gp[j].receive(multi_gp[i].send(j), i)
+                            multi_gp[j].receive(multi_gp[i].send(j),i)
+                    multi_gp[i].Hp_send[i] = multi_gp[i].theta
 
-                for i in range(N):
-                    multi_gp[i].saitekika(t+1)
+                for t in range(iteration):
 
-                tmp_normalize_error = [0]*N
+                    if t==0:
+                        normalize_error[e].append(initial_error)
 
-                for q in range(N):
-                    multi_gp[q].gakushuu(x0,y0)
-                    mu,std = multi_gp[q].yosoku(x1)
-                    seikai = y(x1)
-                    for j in range(len(x1)):
-                        tmp_normalize_error[q] += np.abs(mu[j] - seikai[j])**2   
+                    if (t%100)==0:            
+                        print(str(t) + '回目')
+                    for i in range(N):
+                        for j in range(N):
+                            if i!=j and A[i][j]==1:
+                                if LN.norm(multi_gp[i].kernel.param-multi_gp[i].Hp_send[j], ord=1) > multi_gp[i].event_trigger(t+1, multi_gp[i].param_for_event[e]):
+                                    count += 1
+
+                                    multi_gp[j].receive(multi_gp[i].send(j), i)
+
+                    for i in range(N):
+                        multi_gp[i].saitekika(t+1)
+
+                    tmp_normalize_error = [0]*N
+                    sum_normalize_error = 0
+                    
+                    for q in range(N):
+                        multi_gp[q].gakushuu(x0,y0)
+                        mu,std = multi_gp[q].yosoku(x1)
+                        seikai = y(x1)
+                        for j in range(len(x1)):
+                            tmp_normalize_error[q] += np.abs(mu[j] - seikai[j])**2   
+                        sum_normalize_error += tmp_normalize_error[q]
+                    
+                    normalize_error[e].append(sum_normalize_error)
                 
-                normalize_error.append(tmp_normalize_error[0] + tmp_normalize_error[1] + tmp_normalize_error[2])
-        
-        for d in range(N):
-            multi_gp[d].gakushuu(x0,y0)
-            plt.subplot(321+d)
-            plt.plot(x0,y0,'. ')
-            mu,std = multi_gp[d].yosoku(x1)
-            plt.plot(x1,y(x1),'--r')
-            plt.plot(x1,mu,'g')
-            plt.fill_between(x1,mu-std,mu+std,alpha=0.2,color='g')
-            plt.title('a=%.3f, s=%.3f, w=%.3f'%tuple(multi_gp[d].kernel.param) + str(multi_gp[d].name))
-            plt.tight_layout()
+                terminal_count[e] = count
 
-        plt.show()    
+                for d in range(N):
+                    multi_gp[d].gakushuu(x0,y0)
+                    plt.subplot(321+d)
+                    plt.plot(x0,y0,'. ')
+                    mu,std = multi_gp[d].yosoku(x1)
+                    plt.plot(x1,y(x1),'--r')
+                    plt.plot(x1,mu,'g')
+                    plt.fill_between(x1,mu-std,mu+std,alpha=0.2,color='g')
+                    plt.title('a=%.3f, s=%.3f, w=%.3f'%tuple(multi_gp[d].kernel.param) + str(multi_gp[d].name))
+                    plt.tight_layout()
+
+                plt.show()    
+
+        if not (i):
+            for d in range(N):
+                multi_gp[d].gakushuu(x0,y0)
+                plt.subplot(321+d)
+                plt.plot(x0,y0,'. ')
+                mu,std = multi_gp[d].yosoku(x1)
+                plt.plot(x1,y(x1),'--r')
+                plt.plot(x1,mu,'g')
+                plt.fill_between(x1,mu-std,mu+std,alpha=0.2,color='g')
+                plt.title('a=%.3f, s=%.3f, w=%.3f'%tuple(multi_gp[d].kernel.param) + str(multi_gp[d].name))
+                plt.tight_layout()
+
+            plt.show()
+
 
         if (i):
-            plt.title('normalize_error')
-            plt.plot(np.arange(0,iteration+1), np.array(normalize_error)/initial_error)
-            plt.yscale('log')
+            for e in range(len(eventtrigger)):
+                plt.title('normalize_error')
+                plt.plot(np.arange(0,iteration+1), np.array(normalize_error[e])/initial_error)
+                plt.yscale('log')
+                
+                plt.show()
+
+            label = ["E=0", "E=1", "E=5"]
+            left = [0,1,2]
+            color = ['g', 'b', 'r']
+
+            plt.bar(left, terminal_count, tick_label=label)
+
+            for x, y in  zip(left, terminal_count):
+                plt.text(x, y, y, ha='center', va='bottom')
+            
             plt.show()
 

@@ -31,7 +31,7 @@ class Kernel:
         return a1**2*np.exp(-0.5*((x1-x2)/s)**2) + a2**2*(x1==x2)
 
 class GausskateiWithMyTheory():
-    def __init__(self,kernel, N, name, weight, xd, yd):
+    def __init__(self,kernel, N, name, weight, xd, yd, param_for_event):
         self.N = N
         self.name = name
 
@@ -42,6 +42,7 @@ class GausskateiWithMyTheory():
         self.rec_Hp[name] = self.theta
         self.weight = weight
         self.xd, self.yd = xd, yd
+        self.param_for_event = param_for_event
 
     def gakushuu(self,x0: np.array, y0: np.array):
         """カーネル行列: Kを計算する
@@ -182,6 +183,9 @@ class GausskateiWithMyTheory():
         """
         self.Hp_send[j] = self.theta
         return self.Hp_send[j]
+
+    def event_trigger(self, t, param_for_event):
+        return param_for_event/ (t)
 
 class Gausskatei:
     def __init__(self,kernel):
