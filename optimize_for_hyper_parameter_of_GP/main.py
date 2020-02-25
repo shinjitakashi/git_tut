@@ -39,7 +39,7 @@ if __name__ == '__main__':
     wc = 0.6
 
     #Number of iterations
-    iteration = 1000
+    iteration = 100000
 
     #Coefficient of decision of stepsize : E_ij(t) = E(t) = eventtrigger / (t+1)
     eventtrigger = [0, 1, 5]
@@ -85,7 +85,7 @@ if __name__ == '__main__':
     find_n = 200 # 既知の点の数
     x0 = np.random.uniform(0,200,find_n) # 既知の点
     y0 = y(x0) + np.random.normal(0,0.1,find_n)
-    param0 = [[1.3,0.2,1.3],[1.3,3.8,0.6],[1.2,0.42,1.0],[2.8,0.3,0.2],[3.4,0.3,3]] # パラメータの初期値
+    param0 = [[1.1,0.2,1.3],[1.3,1.8,0.6],[1.2,0.42,1.0],[0.8,0.3,0.2],[3.4,0.3,3]] # パラメータの初期値
     #param0 =[[1.5,0.4,2.7],[2.3,1.8,1.3],[3.2,1.2,0.7]]
     # [[1.5,0.4,2.7],[2.3,2.8,1.3],[3.2,1.2,1.7]]
     # [[1.5,3.4,2.7],[2.3,2.8,1.3],[3.2,1.2,1.7]] これいい！！
@@ -128,7 +128,7 @@ if __name__ == '__main__':
     for i in range(N):
         multi_kernel.append(Kernel(param0[i], bound))
     for i in range(N):
-        gp.append(GausskateiWithMyTheory(multi_kernel[i], N, i, P, xd[i], yd[i], eventtrigger))
+        gp.append(GausskateiWithMyTheory(multi_kernel[i], N, i, P, xd[i], yd[i], eventtrigger, stepsize))
         gp[i].gakushuu(x0, y0)
 
     normalize_error = [[],[],[]]
@@ -244,17 +244,21 @@ if __name__ == '__main__':
             theta_array = ['theta1', 'theta2', 'theta3']
 
             plt.figure(figsize=(7,7))
-            plt.title('grad')
-            for j in range(len(multi_gp[0].kernel.param)):
-                for e in range(len(eventtrigger)):
-                    plt.plot(np.arange(0,iteration), grad_array[j][e], color=color[e], label=label[e])
-                plt.yscale('log')
+            
+            """
+                しきい値パラメータに対する各ハイパーパラメータの勾配をみたい
+                1: jに対して，各ハイパーパラメータの勾配を見るために
+            """
+            for e in range(len(eventtrigger)):
+                plt.figure(figsize=(7,7))
+                for j in range(len(multi_gp[0].kernel.param)):
+                    plt.plot(np.arange(0,iteration), grad_array[e][j], color=color[j], label=theta_array[j])
                 plt.legend(loc='best')
                 
                 plt.xlabel('time t')
-                plt.ylabel('grad : ' + str(theta_array[j]))
+                plt.ylabel('grad')
 
-                plt.savefig(os.path.join(save_dir, 'grad_for_'+theta_array[j]+'.pdf'))
+                plt.savefig(os.path.join(save_dir, 'grad_for_'+label[e]+'.pdf'))
 
             plt.figure(figsize=(5,7))
             left = [0,1,2]

@@ -31,7 +31,7 @@ class Kernel:
         return a1**2*np.exp(-0.5*((x1-x2)/s)**2) + a2**2*(x1==x2)
 
 class GausskateiWithMyTheory():
-    def __init__(self,kernel, N, name, weight, xd, yd, param_for_event):
+    def __init__(self,kernel, N, name, weight, xd, yd, param_for_event, step):
         self.N = N
         self.name = name
 
@@ -43,6 +43,7 @@ class GausskateiWithMyTheory():
         self.weight = weight
         self.xd, self.yd = xd, yd
         self.param_for_event = param_for_event
+        self.step = step
 
     def gakushuu(self,x0: np.array, y0: np.array):
         """カーネル行列: Kを計算する
@@ -160,15 +161,15 @@ class GausskateiWithMyTheory():
         self.grad_optim(self.xd, self.yd)
 
         for i in range(3):
-            self.theta[i] = self.theta[i] + np.dot(self.weight[i], self.diff[:,i]) - 0.01/((t+1)**0.9)*(self.grad[i] + np.random.normal(0,1))
+            self.theta[i] = self.theta[i] + np.dot(self.weight[i], self.diff[:,i]) - self.step/(t+1)*(self.grad[i])
 
         self.Hp_send[self.name] = self.theta
         self.rec_Hp[self.name] = self.theta
 
         self.kernel.param = self.theta
     
-    def stepsize(self, t, step) -> float:
-        return step / (t+1)
+    # def stepsize(self, t) -> float:
+        # return step / (t+1)
     
     def receive(self, state, name):
         """エージェントiからエージェントjの情報を受け取る
@@ -190,7 +191,7 @@ class GausskateiWithMyTheory():
         return self.Hp_send[j]
 
     def event_trigger(self, t, param_for_event):
-        return param_for_event/ (t)
+        return param_for_event/(t)
 
 class Gausskatei:
     def __init__(self,kernel):
