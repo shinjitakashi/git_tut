@@ -39,7 +39,7 @@ if __name__ == '__main__':
     wc = 0.6
 
     #Number of iterations
-    iteration = 100000
+    iteration = 500
 
     #Coefficient of decision of stepsize : E_ij(t) = E(t) = eventtrigger / (t+1)
     eventtrigger = [0, 1, 5]
@@ -85,7 +85,7 @@ if __name__ == '__main__':
     find_n = 200 # 既知の点の数
     x0 = np.random.uniform(0,200,find_n) # 既知の点
     y0 = y(x0) + np.random.normal(0,0.1,find_n)
-    param0 = [[1.1,0.2,1.3],[1.3,1.8,0.6],[1.2,0.42,1.0],[0.8,0.3,0.2],[3.4,0.3,3]] # パラメータの初期値
+    param0 = [[1.5,1.2,1.3],[1.3,0.8,0.06],[1.2,0.42,1.06],[1.8,2.3,3.2],[7.4,5.3,3]] # パラメータの初期値
     #param0 =[[1.5,0.4,2.7],[2.3,1.8,1.3],[3.2,1.2,0.7]]
     # [[1.5,0.4,2.7],[2.3,2.8,1.3],[3.2,1.2,1.7]]
     # [[1.5,3.4,2.7],[2.3,2.8,1.3],[3.2,1.2,1.7]] これいい！！
@@ -273,24 +273,24 @@ if __name__ == '__main__':
             
             plt.savefig(os.path.join(save_dir,'communication_count'+'.pdf'))
 
-        # if (i):
-        #     plt.figure(figsize=(8,15))
-        #     for d in range(N):
-        #         x1 = np.linspace(0,200,400) #予測用のデータ
+        if not (i):
+            plt.figure(figsize=(8,15))
+            for d in range(N):
+                x1 = np.linspace(0,200,400) #予測用のデータ
 
-        #         multi_gp[d].kernel.param = param0[d]
-        #         multi_gp[d].gakushuu(x0,y0)
-        #         plt.subplot(321+d)
-        #         plt.plot(x0,y0,'. ', label='observed data')
-        #         mu,std = multi_gp[d].yosoku(x1)
+                multi_gp[d].kernel.param = param0[d]
+                multi_gp[d].gakushuu(x0,y0)
+                plt.subplot(321+d)
+                plt.plot(x0,y0,'. ', label='observed data')
+                mu,std = multi_gp[d].yosoku(x1)
                 
-        #         plt.plot(x1,y(x1),'--', color='r', label='True')
-        #         plt.plot(x1,mu,'g', label='estimation')
+                plt.plot(x1,y(x1),'--', color='r', label='True')
+                plt.plot(x1,mu,'g', label='estimation')
 
-        #         plt.legend(loc='best')
+                plt.legend(loc='best')
 
-        #         plt.fill_between(x1,mu-std,mu+std,alpha=0.2,color='g')
-        #         plt.title('a=%.3f, s=%.3f, w=%.3f, agent:'%tuple(multi_gp[d].kernel.param) + str(multi_gp[d].name))
-        #         plt.tight_layout()
-        #     plt.savefig(os.path.join(save_dir,'initial.pdf'))
-        #     # plt.show()
+                plt.fill_between(x1,mu-std,mu+std,alpha=0.2,color='g')
+                plt.title('a=%.3f, s=%.3f, w=%.3f, agent:'%tuple(multi_gp[d].kernel.param) + str(multi_gp[d].name))
+                plt.tight_layout()
+            # plt.savefig(os.path.join(save_dir,'initial.pdf'))
+            plt.show()
