@@ -3,8 +3,25 @@ import matplotlib.pyplot as plt
 import numpy.linalg as LN
 import networkx as nx
 import copy
+import os
 
 from Agent import *
+
+
+path = os.path.dirname(os.path.abspath(__file__))
+
+def main(normalize_error, iteration, param):
+    global save_dir
+
+    makeDir(normalize_error)
+    save_dir = path+'/result_data/'+str(round(normalize_error, -1))+'/'
+    np.savetxt(save_dir+'iteration.dat',[iteration])
+    np.savetxt(save_dir+'initial_param.dat', param)
+
+def makeDir(normalize_error):
+    if not os.path.isdir(path+'/result_data/'+str(round(normalize_error, -1))):
+        os.mkdir(path+'/result_data/'+str(round(normalize_error, -1)))
+
 
 
 if __name__ == '__main__':
@@ -16,13 +33,13 @@ if __name__ == '__main__':
     n = 5
 
     #Coefficient of decision of stepsize : a(t) = a / t
-    stepsize = 0.08
+    stepsize = 0.008
             
     # Coefficient of the edge weight  w_if = wc / max_degree
     wc = 0.6
 
     #Number of iterations
-    iteration = 30
+    iteration = 1000
 
     #Coefficient of decision of stepsize : E_ij(t) = E(t) = eventtrigger / (t+1)
     eventtrigger = [0, 1, 5]
@@ -33,11 +50,11 @@ if __name__ == '__main__':
     #======================================================================#
     #Communication Graph
     A = np.array(
-    [[1, 1, 0, 1, 1],
+    [[1, 0, 0, 1, 1],
+     [0, 1, 1, 1, 1],
+     [0, 1, 1, 0, 1],
      [1, 1, 0, 1, 0],
-     [0, 0, 1, 1, 1],
-     [1, 1, 1, 1, 0],
-     [1, 0, 1, 0, 1]
+     [1, 1, 1, 0, 1]
      ])
 
     G = nx.from_numpy_matrix(A)
@@ -65,10 +82,10 @@ if __name__ == '__main__':
     def y(x): # 実際の関数
         return 5*np.sin(np.pi/15*x)*np.exp(-x/50)
 
-    find_n = 150 # 既知の点の数
+    find_n = 200 # 既知の点の数
     x0 = np.random.uniform(0,200,find_n) # 既知の点
-    y0 = y(x0) + np.random.normal(0,0.5,find_n)
-    param0 = [[11.5,15.2,0.3],[14.3,1.8,0.6],[1.2,13.2,1.7],[10.8,8.3,0.2],[7.4,9.3,3]] # パラメータの初期値
+    y0 = y(x0) + np.random.normal(0,0.1,find_n)
+    param0 = [[1.3,0.2,1.3],[1.3,3.8,0.6],[1.2,0.42,1.0],[2.8,0.3,0.2],[3.4,0.3,3]] # パラメータの初期値
     #param0 =[[1.5,0.4,2.7],[2.3,1.8,1.3],[3.2,1.2,0.7]]
     # [[1.5,0.4,2.7],[2.3,2.8,1.3],[3.2,1.2,1.7]]
     # [[1.5,3.4,2.7],[2.3,2.8,1.3],[3.2,1.2,1.7]] これいい！！
@@ -76,7 +93,7 @@ if __name__ == '__main__':
     0に関して，制約をつけないとリプシッツ連続性を言えなくなるため，
     boundにて，制約をつけペナルティ関数法を用いてアルゴリズムの実装を行う．
     """
-    bound = [[1e-2,1e2],[1e-2,1e2],[1e-2,1e2]] # 下限上限
+    bound = [[1e-2,1e1],[1e-2,1e1],[1e-2,1e1]] # 下限上限
     #kernel = Kernel(param0[0],bound)
     
     x1 = np.linspace(0,200,400) #予測用のデータ
@@ -100,6 +117,7 @@ if __name__ == '__main__':
     xd = []
     yd = []
 
+    #最適化用のデータ
     for i in range(N):
         tmp_xd = np.random.uniform(0,200,30)
         xd.append(tmp_xd)
@@ -114,6 +132,8 @@ if __name__ == '__main__':
         gp[i].gakushuu(x0, y0)
 
     normalize_error = [[],[],[]]
+
+    grad_array = [[[],[],[]],[[],[],[]],[[],[],[]]]
 
     tmp_normalize_error = [0] * N
 
@@ -152,7 +172,7 @@ if __name__ == '__main__':
                     if t==0:
                         normalize_error[e].append(initial_error)
 
-                    if (t%100)==0:            
+                    if (t%1000)==0:            
                         print(str(t) + '回目')
                     for i in range(N):
                         for j in range(N):
@@ -162,8 +182,14 @@ if __name__ == '__main__':
 
                                     multi_gp[j].receive(multi_gp[i].send(j), i)
 
+                    tmp_grad = np.array([0,0,0], dtype='float64')
+
                     for i in range(N):
+                        tmp_grad += np.array(multi_gp[i].ref_grad())
                         multi_gp[i].saitekika(t+1)
+
+                    for d in range(len(multi_gp[0].kernel.param)):
+                        grad_array[e][d].append(tmp_grad[d])
 
                     tmp_normalize_error = [0]*N
                     sum_normalize_error = 0
@@ -179,51 +205,88 @@ if __name__ == '__main__':
                     normalize_error[e].append(sum_normalize_error)
                 
                 terminal_count[e] = count
+                
+                if e==0:
+                    main(normalize_error[e][-1], iteration, param0)
 
+                plt.figure(figsize=(8,15))
                 for d in range(N):
                     multi_gp[d].gakushuu(x0,y0)
                     plt.subplot(321+d)
-                    plt.plot(x0,y0,'. ')
+                    plt.plot(x0,y0,'. ', label='observed data')
                     mu,std = multi_gp[d].yosoku(x1)
-                    plt.plot(x1,y(x1),'--r')
-                    plt.plot(x1,mu,'g')
+                    plt.plot(x1,y(x1),'--r', label='True')
+                    plt.plot(x1,mu,'g', label='estimation')
                     plt.fill_between(x1,mu-std,mu+std,alpha=0.2,color='g')
-                    plt.title('a=%.3f, s=%.3f, w=%.3f'%tuple(multi_gp[d].kernel.param) + str(multi_gp[d].name))
+                    plt.title('a=%.3f, s=%.3f, w=%.3f, agent:'%tuple(multi_gp[d].kernel.param) + str(multi_gp[d].name))
                     plt.tight_layout()
-
-                plt.show()    
-
-        if not (i):
-            for d in range(N):
-                multi_gp[d].gakushuu(x0,y0)
-                plt.subplot(321+d)
-                plt.plot(x0,y0,'. ')
-                mu,std = multi_gp[d].yosoku(x1)
-                plt.plot(x1,y(x1),'--r')
-                plt.plot(x1,mu,'g')
-                plt.fill_between(x1,mu-std,mu+std,alpha=0.2,color='g')
-                plt.title('a=%.3f, s=%.3f, w=%.3f'%tuple(multi_gp[d].kernel.param) + str(multi_gp[d].name))
-                plt.tight_layout()
-
-            plt.show()
+                plt.savefig(os.path.join(save_dir,'Yosoku_E='+str(eventtrigger[e])+'.pdf'))
 
 
         if (i):
-            for e in range(len(eventtrigger)):
-                plt.title('normalize_error')
-                plt.plot(np.arange(0,iteration+1), np.array(normalize_error[e])/initial_error)
-                plt.yscale('log')
-                
-                plt.show()
 
-            label = ["E=0", "E=1", "E=5"]
-            left = [0,1,2]
             color = ['g', 'b', 'r']
+            label = ["E="+str(eventtrigger[0]), "E="+str(eventtrigger[1]), "E="+str(eventtrigger[2])]
+            
+            plt.figure(figsize=(7,7))
+            plt.title('normalize_error')
+
+            for e in range(len(eventtrigger)):
+                plt.plot(np.arange(0,iteration+1), np.array(normalize_error[e])/initial_error, color=color[e], label=label[e])
+            plt.yscale('log')
+            plt.legend(loc='best')
+
+            plt.xlabel('time t')
+            plt.ylabel('normalize_error')
+
+            plt.savefig(os.path.join(save_dir,'normalize_error'+'.pdf'))
+            
+            theta_array = ['theta1', 'theta2', 'theta3']
+
+            plt.figure(figsize=(7,7))
+            plt.title('grad')
+            for j in range(len(multi_gp[0].kernel.param)):
+                for e in range(len(eventtrigger)):
+                    plt.plot(np.arange(0,iteration), grad_array[j][e], color=color[e], label=label[e])
+                plt.yscale('log')
+                plt.legend(loc='best')
+                
+                plt.xlabel('time t')
+                plt.ylabel('grad : ' + str(theta_array[j]))
+
+                plt.savefig(os.path.join(save_dir, 'grad_for_'+theta_array[j]+'.pdf'))
+
+            plt.figure(figsize=(5,7))
+            left = [0,1,2]
 
             plt.bar(left, terminal_count, tick_label=label)
+
+            plt.ylabel('communication count')
+            plt.xlabel('param for event-triggered communication')            
 
             for x, y in  zip(left, terminal_count):
                 plt.text(x, y, y, ha='center', va='bottom')
             
-            plt.show()
+            plt.savefig(os.path.join(save_dir,'communication_count'+'.pdf'))
 
+        # if (i):
+        #     plt.figure(figsize=(8,15))
+        #     for d in range(N):
+        #         x1 = np.linspace(0,200,400) #予測用のデータ
+
+        #         multi_gp[d].kernel.param = param0[d]
+        #         multi_gp[d].gakushuu(x0,y0)
+        #         plt.subplot(321+d)
+        #         plt.plot(x0,y0,'. ', label='observed data')
+        #         mu,std = multi_gp[d].yosoku(x1)
+                
+        #         plt.plot(x1,y(x1),'--', color='r', label='True')
+        #         plt.plot(x1,mu,'g', label='estimation')
+
+        #         plt.legend(loc='best')
+
+        #         plt.fill_between(x1,mu-std,mu+std,alpha=0.2,color='g')
+        #         plt.title('a=%.3f, s=%.3f, w=%.3f, agent:'%tuple(multi_gp[d].kernel.param) + str(multi_gp[d].name))
+        #         plt.tight_layout()
+        #     plt.savefig(os.path.join(save_dir,'initial.pdf'))
+        #     # plt.show()

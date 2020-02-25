@@ -133,6 +133,11 @@ class GausskateiWithMyTheory():
                 self.grad[d] = np.trace(KD_00_1 @ self.grad_K[:,:,d]) - (KD_00_1 @ y).T @ self.grad_K[:,:,d] @ (KD_00_1 @ y) + rou/self.N*2*(self.kernel.param[d]-self.kernel.bound[d][1])
 
 
+    def ref_grad(self):
+        self.grad_optim(self.xd, self.yd)
+        return self.grad
+
+
     def saitekika(self, t): # パラメータを調整して学習
         """ハイパーパラメータの最適化
         x_i(t+1) = x_i(t) + Σp_ij(x_ji(t)-x_ij(t)) - a(t)∇f_i(x_i(t))
@@ -155,7 +160,7 @@ class GausskateiWithMyTheory():
         self.grad_optim(self.xd, self.yd)
 
         for i in range(3):
-            self.theta[i] = self.theta[i] + np.dot(self.weight[i], self.diff[:,i]) - 0.01/(t+1)*self.grad[i]
+            self.theta[i] = self.theta[i] + np.dot(self.weight[i], self.diff[:,i]) - 0.01/((t+1)**0.9)*(self.grad[i] + np.random.normal(0,1))
 
         self.Hp_send[self.name] = self.theta
         self.rec_Hp[self.name] = self.theta
