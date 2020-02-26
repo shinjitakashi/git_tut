@@ -104,7 +104,7 @@ class GausskateiWithMyTheory():
         if d == 0:   
             return 2*theta[0]*np.exp(-0.5*theta[1]*np.linalg.norm(xi-xj)**2)
         elif d == 1:
-            return theta[0]**2*np.exp(-0.5*(np.linalg.norm(xi-xj)/theta[1])**2)*(-(np.linalg.norm(xi-xj)/theta[1]))*(-np.linalg.norm(xi-xj)/theta[1]**2)
+            return theta[0]**2*np.exp(-0.5*(np.linalg.norm(xi-xj)/theta[1])**2)*(-(np.linalg.norm(xi-xj)/theta[1]))*(-1*np.linalg.norm(xi-xj)/theta[1]**2)
         elif d == 2:
             return (xj==xi)
         
@@ -130,7 +130,6 @@ class GausskateiWithMyTheory():
             elif self.kernel.bound[d][0] < self.kernel.param[d] < self.kernel.bound[d][1]:
                 self.grad[d] = np.trace(KD_00_1 @ self.grad_K[:,:,d]) - (KD_00_1 @ y).T @ self.grad_K[:,:,d] @ (KD_00_1 @ y)
             elif self.kernel.bound[d][1] <= self.kernel.param[d]:
-                print(self.kernel.param, self.name)
                 self.grad[d] = np.trace(KD_00_1 @ self.grad_K[:,:,d]) - (KD_00_1 @ y).T @ self.grad_K[:,:,d] @ (KD_00_1 @ y) + rou/self.N*2*(self.kernel.param[d]-self.kernel.bound[d][1])
 
 
@@ -256,7 +255,7 @@ class Gausskatei:
         if d == 0:
             return 2*theta[0]*np.exp(-0.5*theta[1]*np.linalg.norm(xi-xj)**2)
         elif d == 1:
-            return theta[0]**2*np.exp(-0.5*(np.linalg.norm(xi-xj)/theta[1])**2)*(-(np.linalg.norm(xi-xj)/theta[1]))*(-np.linalg.norm(xi-xj)/theta[1]**2)
+            return theta[0]**2*np.exp(-0.5*(np.linalg.norm(xi-xj)/theta[1])**2)*(-(np.linalg.norm(xi-xj)/theta[1]))*(-1*np.linalg.norm(xi-xj)/theta[1]**2)
         elif d == 2:
             return (xj==xi)
 

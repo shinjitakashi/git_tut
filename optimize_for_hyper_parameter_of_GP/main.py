@@ -36,13 +36,13 @@ if __name__ == '__main__':
     stepsize = 0.008
             
     # Coefficient of the edge weight  w_if = wc / max_degree
-    wc = 0.6
+    wc = 0.8
 
     #Number of iterations
-    iteration = 500
+    iteration = 10000
 
     #Coefficient of decision of stepsize : E_ij(t) = E(t) = eventtrigger / (t+1)
-    eventtrigger = [0, 1, 5]
+    eventtrigger = [0, 0.5, 1]
 
     # Randomization seed
     np.random.seed(9)
@@ -82,10 +82,10 @@ if __name__ == '__main__':
     def y(x): # 実際の関数
         return 5*np.sin(np.pi/15*x)*np.exp(-x/50)
 
-    find_n = 200 # 既知の点の数
-    x0 = np.random.uniform(0,200,find_n) # 既知の点
-    y0 = y(x0) + np.random.normal(0,0.1,find_n)
-    param0 = [[1.5,1.2,1.3],[1.3,0.8,0.06],[1.2,0.42,1.06],[1.8,2.3,3.2],[7.4,5.3,3]] # パラメータの初期値
+    find_n = 100 # 既知の点の数
+    x0 = np.random.uniform(0,100,find_n) # 既知の点
+    y0 = y(x0) + np.random.normal(0,0.5,find_n)
+    param0 = [[1.5,1.2,1.3],[2.3,5.4,0.6],[0.2,0.42,1.06],[1.8,2.3,3.2],[3.4,0.3,2.3]] # パラメータの初期値
     #param0 =[[1.5,0.4,2.7],[2.3,1.8,1.3],[3.2,1.2,0.7]]
     # [[1.5,0.4,2.7],[2.3,2.8,1.3],[3.2,1.2,1.7]]
     # [[1.5,3.4,2.7],[2.3,2.8,1.3],[3.2,1.2,1.7]] これいい！！
@@ -96,7 +96,7 @@ if __name__ == '__main__':
     bound = [[1e-2,1e1],[1e-2,1e1],[1e-2,1e1]] # 下限上限
     #kernel = Kernel(param0[0],bound)
     
-    x1 = np.linspace(0,200,400) #予測用のデータ
+    x1 = np.linspace(0,100,200) #予測用のデータ
     
     # alone_gp = Gausskatei(kernel) 
     # alone_gp.gakushuu(x0,y0)
@@ -119,9 +119,9 @@ if __name__ == '__main__':
 
     #最適化用のデータ
     for i in range(N):
-        tmp_xd = np.random.uniform(0,200,30)
+        tmp_xd = np.random.uniform(0,100,20)
         xd.append(tmp_xd)
-        yd.append(y(tmp_xd)+np.random.normal(0,0.5,30))
+        yd.append(y(tmp_xd)+np.random.normal(0,0.5,20))
     
     gp = []
     multi_kernel = []
@@ -276,7 +276,7 @@ if __name__ == '__main__':
         if not (i):
             plt.figure(figsize=(8,15))
             for d in range(N):
-                x1 = np.linspace(0,200,400) #予測用のデータ
+                x1 = np.linspace(0,100,200) #予測用のデータ
 
                 multi_gp[d].kernel.param = param0[d]
                 multi_gp[d].gakushuu(x0,y0)
