@@ -39,7 +39,7 @@ if __name__ == '__main__':
     wc = 0.6
 
     #Number of iterations
-    iteration = 100000
+    iteration = 50000
 
     #Coefficient of decision of stepsize : E_ij(t) = E(t) = eventtrigger / (t+1)
     eventtrigger = [0, 1, 5]
@@ -133,7 +133,7 @@ if __name__ == '__main__':
 
     normalize_error = [[],[],[]]
 
-    grad_array = [[[],[],[]],[[],[],[]],[[],[],[]]]
+    grad_array = [[],[],[]]
 
     tmp_normalize_error = [0] * N
 
@@ -182,14 +182,13 @@ if __name__ == '__main__':
 
                                     multi_gp[j].receive(multi_gp[i].send(j), i)
 
-                    tmp_grad = np.array([0,0,0], dtype='float64')
+                    tmp_grad = 0.0
 
                     for i in range(N):
                         tmp_grad += np.array(multi_gp[i].ref_grad())
                         multi_gp[i].saitekika(t+1)
 
-                    for d in range(len(multi_gp[0].kernel.param)):
-                        grad_array[e][d].append(tmp_grad[d])
+                    grad_array[e].append(tmp_grad)
 
                     tmp_normalize_error = [0]*N
                     sum_normalize_error = 0
@@ -249,16 +248,16 @@ if __name__ == '__main__':
                 しきい値パラメータに対する各ハイパーパラメータの勾配をみたい
                 1: jに対して，各ハイパーパラメータの勾配を見るために
             """
+
             for e in range(len(eventtrigger)):
-                plt.figure(figsize=(7,7))
-                for j in range(len(multi_gp[0].kernel.param)):
-                    plt.plot(np.arange(0,iteration), grad_array[e][j], color=color[j], label=theta_array[j])
+                
+                plt.plot(np.arange(0,iteration), grad_array[e], color=color[e], label=label[e])
                 plt.legend(loc='best')
                 
                 plt.xlabel('time t')
                 plt.ylabel('grad')
 
-                plt.savefig(os.path.join(save_dir, 'grad_for_'+label[e]+'.pdf'))
+            plt.savefig(os.path.join(save_dir, 'grad.pdf'))
 
             plt.figure(figsize=(5,7))
             left = [0,1,2]

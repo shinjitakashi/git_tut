@@ -136,8 +136,9 @@ class GausskateiWithMyTheory():
 
     def ref_grad(self):
         self.grad_optim(self.xd, self.yd)
-        return self.grad
-
+        for i in range(len(self.kernel.param)):
+            grad += self.grad[i]
+        return grad
 
     def saitekika(self, t): # パラメータを調整して学習
         """ハイパーパラメータの最適化
