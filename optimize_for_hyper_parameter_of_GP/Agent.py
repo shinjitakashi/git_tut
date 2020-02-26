@@ -130,17 +130,15 @@ class GausskateiWithMyTheory():
             elif self.kernel.bound[d][0] < self.kernel.param[d] < self.kernel.bound[d][1]:
                 self.grad[d] = np.trace(KD_00_1 @ self.grad_K[:,:,d]) - (KD_00_1 @ y).T @ self.grad_K[:,:,d] @ (KD_00_1 @ y)
             elif self.kernel.bound[d][1] <= self.kernel.param[d]:
-                print(self.kernel.param, self.name)
                 self.grad[d] = np.trace(KD_00_1 @ self.grad_K[:,:,d]) - (KD_00_1 @ y).T @ self.grad_K[:,:,d] @ (KD_00_1 @ y) + rou/self.N*2*(self.kernel.param[d]-self.kernel.bound[d][1])
 
 
     def ref_grad(self):
         self.grad_optim(self.xd, self.yd)
-        for i in range(len(self.kernel.param)):
-            grad += self.grad[i]
-        return grad
+        return self.grad
 
-    def saitekika(self, t): # パラメータを調整して学習
+
+    def saitekika(self, t, e): # パラメータを調整して学習
         """ハイパーパラメータの最適化
         x_i(t+1) = x_i(t) + Σp_ij(x_ji(t)-x_ij(t)) - a(t)∇f_i(x_i(t))
 
@@ -162,7 +160,7 @@ class GausskateiWithMyTheory():
         self.grad_optim(self.xd, self.yd)
 
         for i in range(3):
-            self.theta[i] = self.theta[i] + np.dot(self.weight[i], self.diff[:,i]) - self.step/(t+1)*(self.grad[i])
+            self.theta[i] = self.theta[i] + np.dot(self.weight[i], self.diff[:,i]) - self.step[e]/(t+100)*(self.grad[i])
 
         self.Hp_send[self.name] = self.theta
         self.rec_Hp[self.name] = self.theta
@@ -192,7 +190,7 @@ class GausskateiWithMyTheory():
         return self.Hp_send[j]
 
     def event_trigger(self, t, param_for_event):
-        return param_for_event/(t)
+        return param_for_event/(t+1)
 
 class Gausskatei:
     def __init__(self,kernel):
