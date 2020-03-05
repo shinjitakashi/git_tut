@@ -33,20 +33,30 @@ if __name__ == '__main__':
     n = 5
 
     #Coefficient of decision of stepsize : a(t) = a / t
-    stepsize = [1.3825,0.705,0.425]
-    #stepsize = [1.385,0.71,0.43] これいいぞ
+    
+    #良い
+    # stepsize = [0.01, 0.01, 0.01]
+
+
+    stepsize = [0.01, 0.0001, 0.0001]
+    #ペナルティ関数法を用いる時のステップサイズ
+
+    constant_for_time = [10000, 10000, 10000]
+    # constant_for_time = [100, 100, 100]
     
     # Coefficient of the edge weight  w_if = wc / max_degree
-    wc = 0.6
+    wc = 0.8
 
     #Number of iterations
-    iteration = 20000
+    iteration = 1000
 
     #Coefficient of decision of stepsize : E_ij(t) = E(t) = eventtrigger / (t+1)
     eventtrigger = [0, 1, 5]
 
+    event_size = 3
+
     # Randomization seed
-    np.random.seed(9)
+    np.random.seed(1)
 
     #======================================================================#
     #Communication Graph
@@ -80,21 +90,26 @@ if __name__ == '__main__':
             sum += P[i][j]
         P[i][i] = 1.0 - sum
     #======================================================================#
+    
     def y(x): # 実際の関数
         return 5*np.sin(np.pi/15*x)*np.exp(-x/50)
 
     find_n = 100 # 既知の点の数
     x0 = np.random.uniform(0,100,find_n) # 既知の点
     y0 = y(x0) + np.random.normal(0,0.1,find_n)
-    param0 = [[1.05,0.3,1.3],[2.3,2.4,3.0],[0.2,0.42,1.06],[1.8,2.3,0.2],[0.4,0.3,2.3]] # パラメータの初期値
-    #param0 =[[1.5,0.4,2.7],[2.3,1.8,1.3],[3.2,1.2,0.7]]
-    # [[1.5,0.4,2.7],[2.3,2.8,1.3],[3.2,1.2,1.7]]
-    # [[1.5,3.4,2.7],[2.3,2.8,1.3],[3.2,1.2,1.7]] これいい！！
+    # param0 = [[4,2.3,0.05],[0.4,3.4,0.5],[1.6,1.5,0.56],[2.8,2.3,0.8],[1.5,3.3,1.3]] # パラメータの初期値
+    
+    #ペナルティ関数法
+    # param0 = [[1.05,0.3,1.3],[2.3,2.4,3.0],[0.2,0.42,1.06],[1.8,2.3,0.2],[0.4,0.3,2.3]]
+    
+    param0 = [[1.5,0.5,0.13],[1.1,0.4,0.5],[1.2,0.42,0.6],[1.8,2.3,0.2],[0.7,7.3,1.3]] # パラメータの初期値
+
+    # param0 = [[1.5,0.5,1.3],[1.1,0.4,4.0],[1.2,0.42,2.6],[1.8,2.3,1.2],[0.7,7.3,2.3]] # パラメータの初期値
     """
     0に関して，制約をつけないとリプシッツ連続性を言えなくなるため，
     boundにて，制約をつけペナルティ関数法を用いてアルゴリズムの実装を行う．
     """
-    bound = [[1e-2,1e2],[1e-2,1e2],[1e-2,1e2]] # 下限上限
+    bound = [[1e-2,5e1],[1e-2,5e1],[1e-2,5e1]] # 下限上限
     #kernel = Kernel(param0[0],bound)
     
     x1 = np.linspace(0,100,200) #予測用のデータ
@@ -129,10 +144,11 @@ if __name__ == '__main__':
     for i in range(N):
         multi_kernel.append(Kernel(param0[i], bound))
     for i in range(N):
-        gp.append(GausskateiWithMyTheory(multi_kernel[i], N, i, P, xd[i], yd[i], eventtrigger, stepsize))
+        gp.append(GausskateiWithMyTheory(multi_kernel[i], N, i, P, xd[i], yd[i], eventtrigger, stepsize, constant_for_time))
         gp[i].gakushuu(x0, y0)
 
     normalize_error = [[],[],[]]
+    objective_function_array = [[],[],[]]
 
     grad_array = [[[],[],[]],[[],[],[]],[[],[],[]]]
 
@@ -173,8 +189,7 @@ if __name__ == '__main__':
                     if t==0:
                         normalize_error[e].append(initial_error)
 
-                    if (t%1000)==0:            
-                        print(str(t) + '回目')
+                    
                     for i in range(N):
                         for j in range(N):
                             if i!=j and A[i][j]==1:
@@ -184,16 +199,23 @@ if __name__ == '__main__':
                                     multi_gp[j].receive(multi_gp[i].send(j), i)
 
                     tmp_grad = np.array([0,0,0], dtype='float64')
+                    tmp_objective_function = 0
 
                     for i in range(N):
-                        tmp_grad += np.array(multi_gp[i].ref_grad())
+                        tmp_objective_function += multi_gp[i].ref_objective_function()
                         multi_gp[i].saitekika(t, e)
+                        for j in range(len(multi_gp[i].kernel.param)):
+                            tmp_grad[j] += multi_gp[i].grad[j]
+
+                    
+                    objective_function_array[e].append(tmp_objective_function)
 
                     for d in range(len(multi_gp[0].kernel.param)):
                         grad_array[e][d].append(tmp_grad[d])
 
                     tmp_normalize_error = [0]*N
                     sum_normalize_error = 0
+
                     
                     for q in range(N):
                         multi_gp[q].gakushuu(x0,y0)
@@ -202,8 +224,21 @@ if __name__ == '__main__':
                         for j in range(len(x1)):
                             tmp_normalize_error[q] += np.abs(mu[j] - seikai[j])**2   
                         sum_normalize_error += tmp_normalize_error[q]
+                        
                     
                     normalize_error[e].append(sum_normalize_error)
+
+                    if (t%100)==0:            
+                        print(str(t) + '回目')
+                        print('==========================')
+                        print('objective function')
+                        print(objective_function_array[e][-1])
+                        print('==========================')
+                        print('normalize error')
+                        print(normalize_error[e][-1])
+                        print('==========================')
+                        for d in range(3):
+                            print(grad_array[e][d][-1])
                 
                 terminal_count[e] = count
                 
@@ -223,9 +258,15 @@ if __name__ == '__main__':
                     plt.tight_layout()
                 plt.savefig(os.path.join(save_dir,'Yosoku_E='+str(eventtrigger[e])+'.pdf'))
                 
+                print('==========================')
+                print('objective function')
+                print(objective_function_array[e][-1])
+                print('==========================')
+                print('normalize error')
+                print(normalize_error[e][-1])
+                print('==========================')
                 for d in range(3):
                     print(grad_array[e][d][-1])
-                print(normalize_error[e][-1])
 
 
         if (i):
@@ -258,9 +299,12 @@ if __name__ == '__main__':
                 for j in range(len(multi_gp[0].kernel.param)):
                     plt.plot(np.arange(0,iteration), grad_array[e][j], color=color[j], label=theta_array[j])
                 plt.legend(loc='best')
+                # plt.yscale(-100, 100)
                 
                 plt.xlabel('time t')
                 plt.ylabel('grad')
+
+                plt.ylim(-100,100)
 
                 plt.savefig(os.path.join(save_dir, 'grad_for_'+label[e]+'.pdf'))
 

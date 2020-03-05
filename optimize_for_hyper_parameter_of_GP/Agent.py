@@ -28,10 +28,10 @@ class Kernel:
         
         """
         a1,s,a2 = self.param
-        return a1**2*np.exp(-0.5*((x1-x2)/s)**2) + a2**2*(x1==x2)
+        return a1**2*np.exp(-0.5*((x1-x2)**2/s)) + a2*(x1==x2) #ディラックを使う場合
 
 class GausskateiWithMyTheory():
-    def __init__(self,kernel, N, name, weight, xd, yd, param_for_event, step):
+    def __init__(self,kernel, N, name, weight, xd, yd, param_for_event, step, constant_for_time):
         self.N = N
         self.name = name
 
@@ -44,6 +44,7 @@ class GausskateiWithMyTheory():
         self.xd, self.yd = xd, yd
         self.param_for_event = param_for_event
         self.step = step
+        self.constant_for_time = constant_for_time
 
     def gakushuu(self,x0: np.array, y0: np.array):
         """カーネル行列: Kを計算する
@@ -101,21 +102,28 @@ class GausskateiWithMyTheory():
             勾配 (int)  : 勾配
         """
         theta = self.kernel.param
+
+        # if d == 0:
+        #     return (self.kernel(*np.meshgrid(xi, xj)) - self.theta[2])/theta[0]
+        # if d == 1:
+        #     return (self.kernel(*np.meshgrid(xi,xj))-theta[2]*(xi==xj))/theta[1]*np.linalg.norm(xi==xj)**2/theta[1]
+        # elif d ==2:
+        #     return (xi==xj)
+        
+        #これだとうまくいかない？？？
         if d == 0:   
-            return 2*theta[0]*np.exp(-0.5*theta[1]*np.linalg.norm(xi-xj)**2)
+            return 2*theta[0]*np.exp(-0.5*((xi-xj)**2)/theta[1])
         elif d == 1:
-            return theta[0]**2*np.exp(-0.5*(np.linalg.norm(xi-xj)/theta[1])**2)*(-(np.linalg.norm(xi-xj)/theta[1]))*(-np.linalg.norm(xi-xj)/theta[1]**2)
+            return theta[0]**2*np.exp(-0.5*((xi-xj)**2/theta[1]))*(0.5*((xi-xj)**2)/theta[1]**2)
         elif d == 2:
             return (xj==xi)
         
     def kernel_matrix_grad(self, xd: np.array) -> np.array:
-        self.grad_K = np.zeros((len(xd), len(xd), 3))
+        self.grad_K = np.zeros((3, len(xd), len(xd)))
         
-        for i in range(len(xd)):
-            for j in range(len(xd)):
-                for q in range(3):
-                    self.grad_K[i][j][q] = self.kgrad(xd[i], xd[j], q)
-    
+        for i in range(3):
+            self.grad_K[i] = self.kgrad(*np.meshgrid(xd,xd), i)
+            
     def grad_optim(self, xd: np.array, y: np.array, rou=10) -> np.array: 
         KD_00 = self.kernel(*np.meshgrid(xd,xd))
         KD_00_1 = np.linalg.inv(KD_00)
@@ -124,19 +132,31 @@ class GausskateiWithMyTheory():
         
         self.grad = np.zeros(3)
 
+        # 制約なし
         for d in range(3):
-            if self.kernel.param[d] <= self.kernel.bound[d][0]:
-                self.grad[d] = np.trace(KD_00_1 @ self.grad_K[:,:,d]) - (KD_00_1 @ y).T @ self.grad_K[:,:,d] @ (KD_00_1 @ y) + rou/self.N*2*(self.kernel.param[d]-self.kernel.bound[d][0])
-            elif self.kernel.bound[d][0] < self.kernel.param[d] < self.kernel.bound[d][1]:
-                self.grad[d] = np.trace(KD_00_1 @ self.grad_K[:,:,d]) - (KD_00_1 @ y).T @ self.grad_K[:,:,d] @ (KD_00_1 @ y)
-            elif self.kernel.bound[d][1] <= self.kernel.param[d]:
-                self.grad[d] = np.trace(KD_00_1 @ self.grad_K[:,:,d]) - (KD_00_1 @ y).T @ self.grad_K[:,:,d] @ (KD_00_1 @ y) + rou/self.N*2*(self.kernel.param[d]-self.kernel.bound[d][1])
+            self.grad[d] = np.trace(KD_00_1 @ self.grad_K[d,:,:]) - (KD_00_1 @ y).T @ self.grad_K[d,:,:] @ (KD_00_1 @ y)
+
+        # # # #ペナルティ関数法
+        # for d in range(3):
+        #     if self.kernel.param[d] <= self.kernel.bound[d][0]:
+        #         self.grad[d] = np.trace(KD_00_1 @ self.grad_K[:,:,d]) - (KD_00_1 @ y).T @ self.grad_K[:,:,d] @ (KD_00_1 @ y) + rou/self.N*2*(self.kernel.param[d]-self.kernel.bound[d][0])
+        #         print(self.kernel.param)
+        #     elif self.kernel.bound[d][0] < self.kernel.param[d] < self.kernel.bound[d][1]:
+        #         self.grad[d] = np.trace(KD_00_1 @ self.grad_K[:,:,d]) - (KD_00_1 @ y).T @ self.grad_K[:,:,d] @ (KD_00_1 @ y)
+        #     elif self.kernel.bound[d][1] <= self.kernel.param[d]:
+        #         print(self.kernel.param)
+        #         self.grad[d] = np.trace(KD_00_1 @ self.grad_K[:,:,d]) - (KD_00_1 @ y).T @ self.grad_K[:,:,d] @ (KD_00_1 @ y) + rou/self.N*2*(self.kernel.param[d]-self.kernel.bound[d][1])
 
 
-    def ref_grad(self):
-        self.grad_optim(self.xd, self.yd)
-        return self.grad
+    # def ref_grad(self):
+    #     self.grad_optim(self.xd, self.yd)
+    #     return self.grad
 
+    def ref_objective_function(self):
+        KD_00 = self.kernel(*np.meshgrid(self.xd,self.xd))
+        KD_00_1 = np.linalg.inv(KD_00)
+
+        return -np.linalg.norm(KD_00) - self.yd @ KD_00_1 @ self.yd
 
     def saitekika(self, t, e): # パラメータを調整して学習
         """ハイパーパラメータの最適化
@@ -160,8 +180,8 @@ class GausskateiWithMyTheory():
         self.grad_optim(self.xd, self.yd)
 
         for i in range(3):
-            self.theta[i] = self.theta[i] + np.dot(self.weight[i], self.diff[:,i]) - self.step[e]/(t+100)*(self.grad[i])
-
+            self.theta[i] = self.theta[i] + np.dot(self.weight[i], self.diff[:,i]) - self.step[e]/((t+self.constant_for_time[e])**0.6)*(self.grad[i]+np.random.normal(0,1))
+        
         self.Hp_send[self.name] = self.theta
         self.rec_Hp[self.name] = self.theta
 
@@ -190,7 +210,7 @@ class GausskateiWithMyTheory():
         return self.Hp_send[j]
 
     def event_trigger(self, t, param_for_event):
-        return param_for_event/(t+1)
+        return param_for_event/(t+1)**0.6
 
 class Gausskatei:
     def __init__(self,kernel):
