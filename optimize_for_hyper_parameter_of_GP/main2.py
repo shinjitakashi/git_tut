@@ -34,7 +34,7 @@ if __name__ == '__main__':
 
     #Coefficient of decision of stepsize : a(t) = a / t
     # stepsize = [0.05,0.05,0.01]
-    stepsize = [3,0.5,0.0005]
+    stepsize = [1.5,0.5,0.0005]
     #stepsize = [1.385,0.71,0.43] これいいぞ
     constant_for_time = [1000000, 1000000, 100000]
     
