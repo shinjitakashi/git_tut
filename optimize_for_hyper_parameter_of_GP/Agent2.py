@@ -187,8 +187,10 @@ class GaussKateiWithTheory():
         self.grad_optim(self.xd, self.yd)
 
         for i in range(3):
+            #摂動を加える場合
             self.theta[i] = self.theta[i] + np.dot(self.weight[i], self.diff[:,i]) - self.step[e]/((t+self.constant_for_time[e])**0.51)*(self.grad[i]+np.random.normal(0,0.0001))
-        
+            #摂動を加えない場合
+            # self.theta[i] = self.theta[i] + np.dot(self.weight[i], self.diff[:,i]) - self.step[e]/((t+self.constant_for_time[e])**0.51)*(self.grad[i])
         self.Hp_send[self.name] = self.theta
         self.rec_Hp[self.name] = self.theta
 

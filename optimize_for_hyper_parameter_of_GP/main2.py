@@ -34,15 +34,15 @@ if __name__ == '__main__':
 
     #Coefficient of decision of stepsize : a(t) = a / t
     # stepsize = [0.05,0.05,0.01]
-    stepsize = [1.5,0.5,0.0005]
+    stepsize = [0.5,0.005,0.00005]
     #stepsize = [1.385,0.71,0.43] これいいぞ
-    constant_for_time = [1000000, 1000000, 100000]
+    constant_for_time = [1000000, 1000000, 1000000]
     
     # Coefficient of the edge weight  w_if = wc / max_degree
     wc = 0.8
 
     #Number of iterations
-    iteration = 1000000
+    iteration = 5000000
 
     #Coefficient of decision of stepsize : E_ij(t) = E(t) = eventtrigger / (t+1)
     eventtrigger = [0, 1, 10]
@@ -260,7 +260,9 @@ if __name__ == '__main__':
                     plt.plot(x1,y(x1),'--r', label='True')
                     plt.plot(x1,mu,'g', label='estimation')
                     plt.fill_between(x1,mu-std,mu+std,alpha=0.2,color='g')
-                    plt.title('a=%.3f, s=%.3f, w=%.3f, agent:'%tuple(multi_gp[d].kernel.param) + str(multi_gp[d].name))
+                    plt.xlabel('x')
+                    plt.ylabel('y')
+                    # plt.title('a=%.3f, s=%.3f, w=%.3f, agent:'%tuple(multi_gp[d].kernel.param) + str(multi_gp[d].name))
                     plt.tight_layout()
                 plt.savefig(os.path.join(save_dir,'Yosoku_E='+str(eventtrigger[e])+'.pdf'))
                 
@@ -268,6 +270,9 @@ if __name__ == '__main__':
                 for d in range(3):
                     print(grad_array[e][d][-1])
                 print(normalize_error[e][-1])
+                
+                for d in range(len(multi_gp[0].kernel.param)):
+                    np.savetxt(save_dir+'grad_array_'+str(eventtrigger[e])+str(d)+'.dat', grad_array[e][d])
 
 
         if (i):
@@ -306,8 +311,6 @@ if __name__ == '__main__':
             
             theta_array = ['theta1', 'theta2', 'theta3']
 
-
-            
             """
                 しきい値パラメータに対する各ハイパーパラメータの勾配をみたい
                 1: jに対して，各ハイパーパラメータの勾配を見るために
@@ -318,9 +321,11 @@ if __name__ == '__main__':
                     plt.plot(np.arange(0,iteration), grad_array[e][j], color=color[j], label=theta_array[j])
                 plt.legend(loc='best')
                 
-                plt.xlabel('time t')
+                plt.xlabel('time')
                 plt.ylabel('grad')
 
+                plt.rcParams["font.size"] = 13
+                
                 plt.savefig(os.path.join(save_dir, 'grad_for_'+label[e]+'.pdf'))
 
                 plt.figure(figsize=(7,7))
@@ -328,11 +333,13 @@ if __name__ == '__main__':
                     plt.plot(np.arange(0,iteration), grad_array[e][j], color=color[j], label=theta_array[j])
                 plt.legend(loc='best')
                 
-                plt.xlabel('time t')
+                plt.xlabel('time')
                 plt.ylabel('grad')
 
                 plt.ylim(-10,10)
                 plt.xlim(iteration-10000, iteration)
+
+                plt.rcParams["font.size"] = 13
 
                 plt.savefig(os.path.join(save_dir, 'final_grad_for_'+label[e]+'.pdf'))
 
@@ -349,24 +356,43 @@ if __name__ == '__main__':
             
             plt.savefig(os.path.join(save_dir,'communication_count'+'.pdf'))
 
-        if not (i):
+            def y(x): # 実際の関数
+                return 5*np.sin(np.pi/15*x)*np.exp(-x/50)
+
             plt.figure(figsize=(8,15))
-            for d in range(N):
-                x1 = np.linspace(0,100,50) #予測用のデータ
-
-                multi_gp[d].kernel.param = param0[d]
-                multi_gp[d].gakushuu(x0,y0)
-                plt.subplot(321+d)
+            for d in range(len(eventtrigger)):
+                multi_gp[0].gakushuu(x0,y0)
+                plt.subplot(221+d)
                 plt.plot(x0,y0,'. ', label='observed data')
-                mu,std = multi_gp[d].yosoku(x1)
-                
-                plt.plot(x1,y(x1),'--', color='r', label='True')
+                mu,std = multi_gp[0].yosoku(x1)
+                plt.plot(x1,y(x1),'--r', label='True')
                 plt.plot(x1,mu,'g', label='estimation')
-
-                plt.legend(loc='best')
-
                 plt.fill_between(x1,mu-std,mu+std,alpha=0.2,color='g')
-                plt.title('a=%.3f, s=%.3f, w=%.3f, agent:'%tuple(multi_gp[d].kernel.param) + str(multi_gp[d].name))
+                plt.xlabel('x')
+                plt.ylabel('y')
+                plt.title('E=' + str(eventtrigger[d]))
                 plt.tight_layout()
-            # plt.savefig(os.path.join(save_dir,'initial.pdf'))
-            plt.show()
+                plt.rcParams["font.size"] = 13
+            plt.savefig(os.path.join(save_dir,'Yosoku_for_Agent0.pdf'))
+        
+        # if not (i):
+        #     plt.figure(figsize=(8,15))
+        #     for d in range(N):
+        #         x1 = np.linspace(0,100,50) #予測用のデータ
+
+        #         multi_gp[d].kernel.param = param0[d]
+        #         multi_gp[d].gakushuu(x0,y0)
+        #         plt.subplot(321+d)
+        #         plt.plot(x0,y0,'. ', label='observed data')
+        #         mu,std = multi_gp[d].yosoku(x1)
+                
+        #         plt.plot(x1,y(x1),'--', color='r', label='True')
+        #         plt.plot(x1,mu,'g', label='estimation')
+
+        #         plt.legend(loc='best')
+
+        #         plt.fill_between(x1,mu-std,mu+std,alpha=0.2,color='g')
+        #         plt.title('a=%.3f, s=%.3f, w=%.3f, agent:'%tuple(multi_gp[d].kernel.param) + str(multi_gp[d].name))
+        #         plt.tight_layout()
+        #     # plt.savefig(os.path.join(save_dir,'initial.pdf'))
+        #     plt.show()
