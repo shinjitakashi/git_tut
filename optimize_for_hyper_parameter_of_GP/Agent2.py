@@ -188,9 +188,9 @@ class GaussKateiWithTheory():
 
         for i in range(3):
             #摂動を加える場合
-            self.theta[i] = self.theta[i] + np.dot(self.weight[i], self.diff[:,i]) - self.step[e]/((t+self.constant_for_time[e])**0.51)*(self.grad[i]+np.random.normal(0,0.0001))
+            # self.theta[i] = self.theta[i] + np.dot(self.weight[i], self.diff[:,i]) - self.step[e]/((t+self.constant_for_time[e])**0.51)*(self.grad[i]+np.random.normal(0,0.0001))
             #摂動を加えない場合
-            # self.theta[i] = self.theta[i] + np.dot(self.weight[i], self.diff[:,i]) - self.step[e]/((t+self.constant_for_time[e])**0.51)*(self.grad[i])
+            self.theta[i] = self.theta[i] + np.dot(self.weight[i], self.diff[:,i]) - self.step[e]/((t+self.constant_for_time[e])**0.51)*(self.grad[i])
         self.Hp_send[self.name] = self.theta
         self.rec_Hp[self.name] = self.theta
 
@@ -219,4 +219,4 @@ class GaussKateiWithTheory():
         return self.Hp_send[j]
 
     def event_trigger(self, t, param_for_event):
-        return param_for_event/(t+10000)**0.51
+        return param_for_event/(t+10000)**0.8

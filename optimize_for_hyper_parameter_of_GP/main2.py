@@ -17,6 +17,9 @@ def main(normalize_error, iteration, param):
     save_dir = path+'/result_data/'+str(round(normalize_error, 3))+'/'
     np.savetxt(save_dir+'iteration.dat',[iteration])
     np.savetxt(save_dir+'initial_param.dat', param)
+    np.savetxt(save_dir+'stepsize.dat', stepsize)
+    np.savetxt(save_dir+'constant_for_time.dat', constant_for_time)
+    
 
 def makeDir(normalize_error):
     if not os.path.isdir(path+'/result_data/'+str(round(normalize_error, 3))):
@@ -34,7 +37,10 @@ if __name__ == '__main__':
 
     #Coefficient of decision of stepsize : a(t) = a / t
     # stepsize = [0.05,0.05,0.01]
-    stepsize = [0.5,0.005,0.00005]
+    stepsize = [3,3,1] 
+    #しきい値E=0,1はそれぞれ3,1のままiterationだけ増やせばよさそう
+    #しきい値E-0.5は3だと大きすぎる可能性あり
+        
     #stepsize = [1.385,0.71,0.43] これいいぞ
     constant_for_time = [1000000, 1000000, 1000000]
     
@@ -42,10 +48,10 @@ if __name__ == '__main__':
     wc = 0.8
 
     #Number of iterations
-    iteration = 5000000
+    iteration = 1000000
 
     #Coefficient of decision of stepsize : E_ij(t) = E(t) = eventtrigger / (t+1)
-    eventtrigger = [0, 1, 10]
+    eventtrigger = [0, 0.5, 1]
 
     # Randomization seed
     np.random.seed(7)
@@ -273,6 +279,9 @@ if __name__ == '__main__':
                 
                 for d in range(len(multi_gp[0].kernel.param)):
                     np.savetxt(save_dir+'grad_array_'+str(eventtrigger[e])+str(d)+'.dat', grad_array[e][d])
+                
+                for i in range(N):
+                    np.savetxt(save_dir+'params_for_agent'+str(i)+'_at_E='+str(eventtrigger[e])+'.dat', multi_gp[i])
 
 
         if (i):
@@ -374,6 +383,7 @@ if __name__ == '__main__':
                 plt.tight_layout()
                 plt.rcParams["font.size"] = 13
             plt.savefig(os.path.join(save_dir,'Yosoku_for_Agent0.pdf'))
+            
         
         # if not (i):
         #     plt.figure(figsize=(8,15))
