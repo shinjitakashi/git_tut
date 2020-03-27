@@ -1,6 +1,6 @@
 The MIT License (MIT)
 
-Copyright (c) 2020   
+Copyright (c) 2020 Takashi Adachi
 Copyright (c) 2020 Makoto Yamashita  
 Copyright (c) 2016 Koki Saitoh
 
